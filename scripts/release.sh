@@ -53,4 +53,5 @@ git add fixes/fixes.json results README.md package.json package-lock.json action
 git commit -m "Release v$version with the php.net fix table"
 git tag "v$version"
 git push origin HEAD "v$version"
-echo "== pushed v$version; watch the publish workflow"
+echo "== pushed v$version; watch the publish workflow: gh run watch \$(gh run list --workflow publish.yml --limit 1 --json databaseId -q '.[0].databaseId')"
+echo "   npm takes a few minutes to show a new version; check with: npm view php2shell-repo-audit@$version version --prefer-online"
