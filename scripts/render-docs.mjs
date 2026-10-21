@@ -62,6 +62,7 @@ const blocks = {
       : "- A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.",
     "- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.",
     "- A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add \"not affected\", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.",
+    `- Context changes the message, never the bucket. php.net's [advisory](${published ? advisory : "https://www.php.net/archive/2026.php"}) puts the risk on installations that serve web requests (PHP-FPM and mod_php highest, then php-cgi, FrankenPHP and LiteSpeed), so CI and dev findings add "lower exposure than a web-serving runtime; still update" and stay in the same bucket.`,
   ].join("\n"),
 
   "fixed-versions": published
@@ -102,6 +103,7 @@ const blocks = {
       "|---|---|",
       "| `schemaVersion` | Shape version of this output, currently 1 |",
       "| `tool`, `version` | Tool name and version |",
+      "| `repo` | With `--repo`: `name` and the `branch` that was read |",
       "| `fixTable` | The fix table used: `origin` (remote, bundled or file), `revision`, `status` (pending or published), `publishedAt`, `source` (php.net advisory URL) |",
       "| `warnings` | Problems loading the remote fix table, if any |",
       "| `counts` | `actionRequired`, `checkManually`, `declaredFixed` |",
@@ -120,6 +122,7 @@ const blocks = {
       "| `findings[].branch` | PHP branch, e.g. `8.3`, or null |",
       "| `findings[].message` | Why it landed in this bucket |",
       "| `findings[].fix` | What to do about it |",
+      "| `findings[].upstream` | With `--check-upstream`, on floating official tags: `image`, `digest`, `phpVersion` (what Docker Hub's tag has now) and `rebuilt` (true, false, or null if the table has no fix for that branch) |",
     ].join("\n");
   })(),
 };
@@ -178,7 +181,9 @@ const llms = [
   "## Commands",
   `- One repo: \`${npx} path/to/repo\``,
   `- A GitHub org or user account (read-only): \`${npx} --org your-org\``,
+  `- One GitHub repo without cloning (token optional for public repos): \`${npx} --repo owner/name\``,
   `- Summary for an incident channel: \`${npx} --org your-org --markdown\``,
+  `- Has Docker Hub rebuilt a floating php tag yet: \`${npx} path/to/repo --check-upstream\``,
   `- JSON (schemaVersion 1, a \`fix\` string on every finding): \`${npx} path/to/repo --json\``,
   ...(published ? [`- GitHub Action: \`uses: Amsozzer1/php2shell-repo-audit@v${pkg.version}\``] : []),
   "",
@@ -189,7 +194,7 @@ const llms = [
   ...notCaught,
   "",
   "## README sections",
-  ...["Check in 60 seconds, without this tool", "Run it on a repo or a GitHub org", "What to do for each finding", "Exit codes", "JSON output", "php2shell questions", "Results"].map(link),
+  ...["Check in 60 seconds, without this tool", "Run it on a repo or a GitHub org", "What to do for each finding", "JSON output", "php2shell questions", "Results"].map(link),
   `- [Fix table](${REPO}/blob/main/fixes/fixes.json)`,
   "",
 ].join("\n");

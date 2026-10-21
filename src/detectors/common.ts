@@ -49,7 +49,7 @@ export function imageDeclaration(
     const tag = parseOfficialTag(ref.tag);
     const version = tag.version ?? ref.tag ?? "latest";
     if (ref.digest) return { ...base, kind: "digest", version, note: ref.digest };
-    return { ...base, kind: r.usedDefault ? "build-arg" : "official-image", version, note: tag.osSuffix ?? undefined };
+    return { ...base, kind: r.usedDefault ? "build-arg" : "official-image", version, note: tag.osSuffix ?? undefined, tag: ref.tag ?? "latest" };
   }
   if (bundlesPhp(ref)) return { ...base, kind: "third-party-image", version: phpFromThirdParty(ref), note: ref.name };
   return null;

@@ -2,7 +2,7 @@
 import { execFileSync } from "node:child_process";
 
 export interface ClientOptions {
-  token: string;
+  token: string | null; // null: unauthenticated (public repos only, 60 requests an hour)
   baseUrl?: string; // GITHUB_API_URL, for GitHub Enterprise or a local mock
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
@@ -66,7 +66,7 @@ export class GitHub {
         method: "GET",
         headers: {
           Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${this.o.token}`,
+          ...(this.o.token ? { Authorization: `Bearer ${this.o.token}` } : {}),
           "X-GitHub-Api-Version": "2022-11-28",
           "User-Agent": "php2shell-repo-audit",
         },

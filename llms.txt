@@ -8,7 +8,9 @@ Fix table: rev 2, from php.net's advisory of 2026-10-21 (https://www.php.net/arc
 ## Commands
 - One repo: `npx php2shell-repo-audit@0.1.0 path/to/repo`
 - A GitHub org or user account (read-only): `npx php2shell-repo-audit@0.1.0 --org your-org`
+- One GitHub repo without cloning (token optional for public repos): `npx php2shell-repo-audit@0.1.0 --repo owner/name`
 - Summary for an incident channel: `npx php2shell-repo-audit@0.1.0 --org your-org --markdown`
+- Has Docker Hub rebuilt a floating php tag yet: `npx php2shell-repo-audit@0.1.0 path/to/repo --check-upstream`
 - JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit@0.1.0 path/to/repo --json`
 - GitHub Action: `uses: Amsozzer1/php2shell-repo-audit@v0.1.0`
 
@@ -31,7 +33,6 @@ Fix table: rev 2, from php.net's advisory of 2026-10-21 (https://www.php.net/arc
 - [Check in 60 seconds, without this tool](https://github.com/Amsozzer1/php2shell-repo-audit#check-in-60-seconds-without-this-tool)
 - [Run it on a repo or a GitHub org](https://github.com/Amsozzer1/php2shell-repo-audit#run-it-on-a-repo-or-a-github-org)
 - [What to do for each finding](https://github.com/Amsozzer1/php2shell-repo-audit#what-to-do-for-each-finding)
-- [Exit codes](https://github.com/Amsozzer1/php2shell-repo-audit#exit-codes)
 - [JSON output](https://github.com/Amsozzer1/php2shell-repo-audit#json-output)
 - [php2shell questions](https://github.com/Amsozzer1/php2shell-repo-audit#php2shell-questions)
 - [Results](https://github.com/Amsozzer1/php2shell-repo-audit#results)
