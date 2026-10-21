@@ -4,7 +4,7 @@ Output docs/demo.gif
 
 Set Shell "bash"
 Set FontSize 14
-Set Width 2000
+Set Width 2160
 Set Height 560
 Set Padding 20
 Set TypingSpeed 35ms
