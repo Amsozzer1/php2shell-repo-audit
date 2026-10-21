@@ -1,0 +1,224 @@
+{
+  "measuredWith": {
+    "fixes": "fixes/fixes.json",
+    "tableStatus": "published",
+    "node": "v24.21.0",
+    "date": "2026-10-21"
+  },
+  "candidates": "git grep -niE 'php|sail/runtimes' -- '*Dockerfile*' '*Containerfile*' '*.yml' '*.yaml' '*.php-version' '*.tool-versions' '*composer.json' ':!vendor' ':!node_modules'",
+  "totals": {
+    "labeled": 112,
+    "toolFound": 112,
+    "toolFP": 0,
+    "toolOutsideGrep": 30,
+    "grepFound": 47,
+    "grepFP": 0,
+    "unprovableLabeled": 111
+  },
+  "bySet": {
+    "tuning": {
+      "labeled": 70,
+      "toolFound": 70,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 31,
+      "grepFP": 0,
+      "unprovableLabeled": 69
+    },
+    "held-out": {
+      "labeled": 42,
+      "toolFound": 42,
+      "toolFP": 0,
+      "toolOutsideGrep": 30,
+      "grepFound": 16,
+      "grepFP": 0,
+      "unprovableLabeled": 42
+    }
+  },
+  "outsideLabelingGrep": [
+    "nextcloud/docker .examples/docker-compose/insecure/mariadb/apache/compose.yaml:26 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/insecure/mariadb/apache/compose.yaml:43 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/insecure/mariadb/fpm/compose.yaml:26 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/insecure/mariadb/fpm/compose.yaml:56 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/insecure/postgres/apache/compose.yaml:21 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/insecure/postgres/apache/compose.yaml:38 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/insecure/postgres/fpm/compose.yaml:21 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/insecure/postgres/fpm/compose.yaml:51 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/mariadb/apache/compose.yaml:26 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/mariadb/apache/compose.yaml:48 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/mariadb/fpm/compose.yaml:26 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/mariadb/fpm/compose.yaml:62 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/postgres/apache/compose.yaml:21 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/postgres/apache/compose.yaml:43 third-party-image image: nextcloud:apache",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/postgres/fpm/compose.yaml:21 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/docker-compose/with-nginx-proxy/postgres/fpm/compose.yaml:57 third-party-image image: nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/dockerfiles/cron/apache/Dockerfile:1 third-party-image FROM nextcloud:apache",
+    "nextcloud/docker .examples/dockerfiles/cron/fpm-alpine/Dockerfile:1 third-party-image FROM nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/dockerfiles/cron/fpm/Dockerfile:1 third-party-image FROM nextcloud:fpm",
+    "nextcloud/docker .examples/dockerfiles/full/apache/Dockerfile:1 third-party-image FROM nextcloud:apache",
+    "nextcloud/docker .examples/dockerfiles/full/fpm-alpine/Dockerfile:1 third-party-image FROM nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/dockerfiles/full/fpm/Dockerfile:1 third-party-image FROM nextcloud:fpm",
+    "nextcloud/docker .examples/dockerfiles/imap/apache/Dockerfile:1 third-party-image FROM nextcloud:apache",
+    "nextcloud/docker .examples/dockerfiles/imap/fpm-alpine/Dockerfile:1 third-party-image FROM nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/dockerfiles/imap/fpm/Dockerfile:1 third-party-image FROM nextcloud:fpm",
+    "nextcloud/docker .examples/dockerfiles/smb/apache/Dockerfile:1 third-party-image FROM nextcloud:apache",
+    "nextcloud/docker .examples/dockerfiles/smb/fpm-alpine/Dockerfile:1 third-party-image FROM nextcloud:fpm-alpine",
+    "nextcloud/docker .examples/dockerfiles/smb/fpm/Dockerfile:1 third-party-image FROM nextcloud:fpm",
+    "nextcloud/docker stack.yml:15 third-party-image image: nextcloud",
+    "nextcloud/docker stack.yml:30 third-party-image image: nextcloud"
+  ],
+  "byType": {
+    "setup-php": {
+      "labeled": 26,
+      "tool": 26,
+      "grep": 0
+    },
+    "composer": {
+      "labeled": 13,
+      "tool": 13,
+      "grep": 0
+    },
+    "sail": {
+      "labeled": 2,
+      "tool": 2,
+      "grep": 0
+    },
+    "version-file:exact": {
+      "labeled": 1,
+      "tool": 1,
+      "grep": 0
+    },
+    "php-image:floating": {
+      "labeled": 44,
+      "tool": 44,
+      "grep": 44
+    },
+    "php-image:arg": {
+      "labeled": 3,
+      "tool": 3,
+      "grep": 3
+    },
+    "distro": {
+      "labeled": 19,
+      "tool": 19,
+      "grep": 0
+    },
+    "third-party-image": {
+      "labeled": 4,
+      "tool": 4,
+      "grep": 0
+    }
+  },
+  "perRepo": [
+    {
+      "repo": "pestphp/pestphp.com",
+      "set": "tuning",
+      "labeled": 4,
+      "toolFound": 4,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 0,
+      "grepFP": 0,
+      "unprovableLabeled": 4
+    },
+    {
+      "repo": "monicahq/monica",
+      "set": "tuning",
+      "labeled": 9,
+      "toolFound": 9,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 2,
+      "grepFP": 0,
+      "unprovableLabeled": 8
+    },
+    {
+      "repo": "docker-library/wordpress",
+      "set": "tuning",
+      "labeled": 29,
+      "toolFound": 29,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 29,
+      "grepFP": 0,
+      "unprovableLabeled": 29
+    },
+    {
+      "repo": "symfony/demo",
+      "set": "tuning",
+      "labeled": 10,
+      "toolFound": 10,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 0,
+      "grepFP": 0,
+      "unprovableLabeled": 10
+    },
+    {
+      "repo": "laravel/sail",
+      "set": "tuning",
+      "labeled": 14,
+      "toolFound": 14,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 0,
+      "grepFP": 0,
+      "unprovableLabeled": 14
+    },
+    {
+      "repo": "wodby/docker4drupal",
+      "set": "tuning",
+      "labeled": 4,
+      "toolFound": 4,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 0,
+      "grepFP": 0,
+      "unprovableLabeled": 4
+    },
+    {
+      "repo": "nextcloud/docker",
+      "set": "held-out",
+      "labeled": 14,
+      "toolFound": 14,
+      "toolFP": 0,
+      "toolOutsideGrep": 30,
+      "grepFound": 14,
+      "grepFP": 0,
+      "unprovableLabeled": 14
+    },
+    {
+      "repo": "FreshRSS/FreshRSS",
+      "set": "held-out",
+      "labeled": 10,
+      "toolFound": 10,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 0,
+      "grepFP": 0,
+      "unprovableLabeled": 10
+    },
+    {
+      "repo": "BookStackApp/BookStack",
+      "set": "held-out",
+      "labeled": 8,
+      "toolFound": 8,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 1,
+      "grepFP": 0,
+      "unprovableLabeled": 8
+    },
+    {
+      "repo": "wallabag/wallabag",
+      "set": "held-out",
+      "labeled": 10,
+      "toolFound": 10,
+      "toolFP": 0,
+      "toolOutsideGrep": 0,
+      "grepFound": 1,
+      "grepFP": 0,
+      "unprovableLabeled": 10
+    }
+  ]
+}

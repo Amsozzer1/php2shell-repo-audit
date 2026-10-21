@@ -1,16 +1,32 @@
 {
   "schemaVersion": 1,
-  "revision": 1,
-  "cves": ["CVE-2026-109618", "CVE-2026-109619"],
-  "status": "pending",
-  "publishedAt": null,
-  "source": "https://www.php.net/archive/2026.php",
+  "revision": 2,
+  "cves": [
+    "CVE-2026-109618",
+    "CVE-2026-109619"
+  ],
+  "status": "published",
+  "publishedAt": "2026-10-21",
+  "source": "https://www.php.net/archive/2026.php#2026-10-21-5",
   "verifiedAgainst": "https://www.php.net/releases/?json&version=<branch>",
   "branches": {
-    "8.5": { "fixed": null },
-    "8.4": { "fixed": null },
-    "8.3": { "fixed": null },
-    "8.2": { "fixed": null }
+    "8.5": {
+      "fixed": "8.5.12"
+    },
+    "8.4": {
+      "fixed": "8.4.27"
+    },
+    "8.3": {
+      "fixed": "8.3.36"
+    },
+    "8.2": {
+      "fixed": "8.2.35"
+    }
   },
-  "eol": ["5", "7", "8.0", "8.1"]
+  "eol": [
+    "5",
+    "7",
+    "8.0",
+    "8.1"
+  ]
 }

@@ -7,7 +7,7 @@ By [Ahmed Sozzer](https://amsozzer.com) · [github.com/Amsozzer1](https://github
 php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
 
 <!-- intro:start -->
-php2shell is two critical bugs in PHP itself; php.net publishes the fixed versions at 14:00 UTC on 21 Oct 2026. The first question is which of your repos and images run a PHP that needs the fix. `grep "FROM php:"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files in one repo or a GitHub org. It does not check running servers.
+php2shell is two critical bugs in PHP itself; php.net published the fixed versions on 2026-10-21 in its [advisory](https://www.php.net/archive/2026.php#2026-10-21-5). The first question is which of your repos and images run a PHP that needs the fix. `grep "FROM php:"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files in one repo or a GitHub org. It does not check running servers.
 <!-- intro:end -->
 
 ## Check in 60 seconds, without this tool
@@ -26,17 +26,16 @@ docker build --pull .
 ```
 
 <!-- compare:start -->
-Compare what you see with the fixed versions in [php.net's advisory](https://www.php.net/archive/2026.php) when it is published at 14:00 UTC on 21 Oct 2026.
+Compare what you see with the fixed versions in [php.net's advisory](https://www.php.net/archive/2026.php#2026-10-21-5): 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35. Fix table in this repo: rev 2, 2026-10-21.
 <!-- compare:end -->
 
 ## Run it on a repo or a GitHub org
 
 <!-- release-note:start -->
-0.1.0 is published after php.net's advisory at 14:00 UTC. Until then, `npx php2shell-repo-audit` runs the release candidate, whose fix table has no fixed versions yet, so nothing is marked fixed.
 <!-- release-note:end -->
 
 ```sh
-npx php2shell-repo-audit path/to/repo
+npx php2shell-repo-audit@0.1.0 path/to/repo
 ```
 
 Node 20 or newer. No runtime dependencies. On a local repo the only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
@@ -44,8 +43,8 @@ Node 20 or newer. No runtime dependencies. On a local repo the only network call
 To inventory the repos in a GitHub organization or user account, read-only:
 
 ```sh
-npx php2shell-repo-audit --org your-org                         # buckets grouped by repo
-npx php2shell-repo-audit --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
+npx php2shell-repo-audit@0.1.0 --org your-org                         # buckets grouped by repo
+npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
 ```
 
 - The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough. It only sees repos the token can read, so check the repo count it prints against what you expect.
@@ -74,18 +73,18 @@ Output on the demo repo:
 <!-- sample:start -->
 ```text
 $ php2shell-repo-audit examples/demo-repo
-php2shell-repo-audit 0.1.0  ·  fix table rev 1: pending, php.net has not published fixed versions
+php2shell-repo-audit 0.1.0  ·  fix table rev 2: published 2026-10-21, https://www.php.net/archive/2026.php#2026-10-21-5
 Reads PHP versions declared in this repo. It does not check running servers.
 
-ACTION REQUIRED (1)
+ACTION REQUIRED (3)
+  .tool-versions:2             dev   php 8.4.20                  vulnerable: fixed in 8.4.27, upgrade
+  docker/api/Dockerfile:1      prod  FROM php:8.3.30-fpm         vulnerable: fixed in 8.3.36, upgrade
   docker/legacy/Dockerfile:1   prod  FROM php:8.1-fpm            eol: no official php.net release for 8.1; upgrade, use your vendor's backport, or build from php.net's backport branch PHP-8.1-CVE-2026-109618-109619
 
-CHECK MANUALLY (6)
+CHECK MANUALLY (4)
   .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build
-  .tool-versions:2             dev   php 8.4.20                  pending-fix: php.net has not published the fixed 8.4 version
   Dockerfile:1                 prod  FROM php:8.3-fpm            floating-rebuild: rebuild with --pull and redeploy after the release, then confirm with the docker run check
   composer.json:6              prod  "php": "^8.2"               constraint-only: a composer constraint is not the runtime
-  docker/api/Dockerfile:1      prod  FROM php:8.3.30-fpm         pending-fix: php.net has not published the fixed 8.3 version
   docker/worker/Dockerfile:3   prod  apt-get install php8.2-cli  distro-vendor: vendors backport fixes without changing the version; check your vendor's security tracker
 
 DECLARED ≥ FIXED (0)
@@ -111,6 +110,14 @@ The first run on the tuning repos found real gaps (Dockerfile names like `Docker
 **111 of the 112 labeled declarations can't prove which PHP build runs.** They are floating image tags, setup-php versions, distro packages, Sail runtimes, images that bundle PHP, templated tags and composer constraints. Only one is an exact pin (`.tool-versions` with a patch version). That is why most findings land in CHECK MANUALLY.
 
 <!-- verdicts:start -->
+Measured against php.net's fix table (2026-10-21, `results/firm-verdicts.json`), over findings that match a label:
+
+| | This tool | Naive version compare |
+|---|---|---|
+| Unverifiable firm verdicts (version-dependent, not EOL, source can't prove the runtime) | 0 of 95 (0 by design) | 95 of 95 |
+| EOL findings (counted separately: no official php.net release, so ACTION REQUIRED is certain) | 8 found, 0 ACTION REQUIRED (the rest are distro or Sail installs, kept in CHECK MANUALLY with an end-of-life note) | 8 firm |
+
+4 findings on branches with no fixed version in the table are left out of the first row.
 <!-- verdicts:end -->
 
 Full numbers and how each was produced: [`results/numbers.md`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/numbers.md).
@@ -120,7 +127,7 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 <!-- how-it-works:start -->
 - Walks the repo (skipping `node_modules`, `vendor`, `.git` and files over 1 MB) and reads Dockerfiles and Containerfiles, YAML files (compose, Kubernetes, GitHub Actions, GitLab CI, Forgejo), `.php-version`, `.tool-versions` and `composer.json`. YAML is read line by line, without a YAML library.
 - Each declaration gets a kind (official `php` image, digest, ARG default, image that bundles PHP, distro package, Sail runtime, setup-php, version file, composer) and a context (prod, ci, dev).
-- A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.
+- A fix table from php.net (`fixes/fixes.json`, rev 2, from the [advisory](https://www.php.net/archive/2026.php#2026-10-21-5) of 2026-10-21) decides the bucket: 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35. On a branch with no fixed version in the table, exact pins stay in CHECK MANUALLY.
 - The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
 - A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add "not affected", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.
 <!-- how-it-works:end -->
@@ -166,7 +173,7 @@ The tool doesn't change anything. Each finding has a reason code; this is what t
 
 ### How do I check if my repos are affected by php2shell (CVE-2026-109618, CVE-2026-109619)?
 
-php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit path/to/repo` for one repo, or `npx php2shell-repo-audit --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
+php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit@0.1.0 path/to/repo` for one repo, or `npx php2shell-repo-audit@0.1.0 --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
 
 ### Does it check my servers or running containers?
 
@@ -179,7 +186,18 @@ No. It compares the PHP versions a repo declares with the fixed versions php.net
 ### Which PHP versions fix CVE-2026-109618 and CVE-2026-109619?
 
 <!-- fixed-versions:start -->
-php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is `pending` and nothing can be marked fixed. 5.x, 7.x, 8.0 and 8.1 get no official php.net release, so the tool marks them ACTION REQUIRED. php.net published source backport branches for 7.4, 8.0 and 8.1, and some distros and LTS vendors backport; the message for each finding says which applies. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
+php.net published the fixed versions on 2026-10-21 in its [advisory](https://www.php.net/archive/2026.php#2026-10-21-5):
+
+| Branch | Fixed in |
+|---|---|
+| 8.5 | 8.5.12 |
+| 8.4 | 8.4.27 |
+| 8.3 | 8.3.36 |
+| 8.2 | 8.2.35 |
+
+This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json) (rev 2), filled by hand from that advisory and checked against php.net's per-branch release data. 5.x, 7.x, 8.0 and 8.1 get no official php.net release, so the tool marks them ACTION REQUIRED. php.net published source backport branches for 7.4, 8.0 and 8.1, and some distros and LTS vendors backport; the message for each finding says which applies. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
+
+If you can't update right now, php.net lists [mitigations in the advisory](https://www.php.net/archive/2026.php#2026-10-21-5) that reduce exposure but don't fix it.
 <!-- fixed-versions:end -->
 
 ### Is `php:8.3-fpm` fixed?
@@ -196,7 +214,7 @@ Not reliably. Distro vendors backport fixes without changing the upstream versio
 
 ### How do I run it across a GitHub org?
 
-Run `npx php2shell-repo-audit --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
+Run `npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
 
 ### How do I run a php2shell check in GitHub Actions?
 
@@ -236,15 +254,15 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
   "version": "0.1.0",
   "fixTable": {
     "origin": "bundled",
-    "revision": 1,
-    "status": "pending",
-    "publishedAt": null,
-    "source": "https://www.php.net/archive/2026.php"
+    "revision": 2,
+    "status": "published",
+    "publishedAt": "2026-10-21",
+    "source": "https://www.php.net/archive/2026.php#2026-10-21-5"
   },
   "warnings": [],
   "counts": {
-    "actionRequired": 1,
-    "checkManually": 6,
+    "actionRequired": 3,
+    "checkManually": 4,
     "declaredFixed": 0
   },
   "exitCode": 1,
@@ -267,8 +285,8 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "fix": "After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`."
     },
     {
-      "bucket": "manual",
-      "reason": "pending-fix",
+      "bucket": "action",
+      "reason": "vulnerable",
       "file": ".tool-versions",
       "line": 2,
       "context": "dev",
@@ -276,8 +294,8 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "declared": "php 8.4.20",
       "version": "8.4.20",
       "branch": "8.4",
-      "message": "php.net has not published the fixed 8.4 version",
-      "fix": "php.net has no fixed version in the table for this branch yet. Re-run after the advisory; if the pin is below the fix, change it."
+      "message": "fixed in 8.4.27, upgrade",
+      "fix": "Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy."
     }
   ]
 }

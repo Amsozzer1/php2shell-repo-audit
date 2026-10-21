@@ -3,13 +3,14 @@
 > php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
 
 php2shell is CVE-2026-109618 and CVE-2026-109619. The tool reads files in git (with --org, the GitHub REST API, read-only). It does not check running servers and does not test for the bug.
-Fix table: php.net's fixed versions are due at 14:00 UTC on 21 Oct 2026; until they are in the table, nothing is marked fixed.
+Fix table: rev 2, from php.net's advisory of 2026-10-21 (https://www.php.net/archive/2026.php#2026-10-21-5): 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35.
 
 ## Commands
-- One repo: `npx php2shell-repo-audit path/to/repo`
-- A GitHub org or user account (read-only): `npx php2shell-repo-audit --org your-org`
-- Summary for an incident channel: `npx php2shell-repo-audit --org your-org --markdown`
-- JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit path/to/repo --json`
+- One repo: `npx php2shell-repo-audit@0.1.0 path/to/repo`
+- A GitHub org or user account (read-only): `npx php2shell-repo-audit@0.1.0 --org your-org`
+- Summary for an incident channel: `npx php2shell-repo-audit@0.1.0 --org your-org --markdown`
+- JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit@0.1.0 path/to/repo --json`
+- GitHub Action: `uses: Amsozzer1/php2shell-repo-audit@v0.1.0`
 
 ## Exit codes
 - `0`: Nothing needs action or a manual check in what this repo declares, and at least one production runtime is declared. This is not a statement about your servers.
