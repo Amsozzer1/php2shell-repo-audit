@@ -1,0 +1,25 @@
+# Private planning: names the target company. Never commit.
+.private/
+
+# Video work lives outside the repo
+footage/
+
+# Data and models (fetch with scripts instead)
+data/
+models/
+
+# Build output
+build/
+dist/
+target/
+node_modules/
+.venv/
+__pycache__/
+*.o
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+.env
+.env.*

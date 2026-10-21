@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Strips tool attribution from commit messages and enforces a single author.
+set -euo pipefail
+msg_file="$1"
+
+# Remove attribution lines (Co-Authored-By, "Generated with ...", session links, robot emoji lines).
+tmp="$(mktemp)"
+grep -viE '^[[:space:]]*(co-authored-by:|claude-session:|generated with|🤖)' "$msg_file" > "$tmp" || true
+# Drop trailing blank lines left behind.
+sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$tmp" > "$msg_file"
+rm -f "$tmp"
+
+expected_name="Ahmed M. Sozzer"
+expected_email="ahmed@amsozzer.com"
+author_name="$(git var GIT_AUTHOR_IDENT | sed -E 's/ <.*//')"
+author_email="$(git var GIT_AUTHOR_IDENT | sed -E 's/.*<(.*)>.*/\1/')"
+committer_name="$(git var GIT_COMMITTER_IDENT | sed -E 's/ <.*//')"
+
+if [ "$author_name" != "$expected_name" ] || [ "$author_email" != "$expected_email" ] || [ "$committer_name" != "$expected_name" ]; then
+  echo "commit-msg: author/committer must be $expected_name <$expected_email> (got author '$author_name <$author_email>', committer '$committer_name')." >&2
+  exit 1
+fi

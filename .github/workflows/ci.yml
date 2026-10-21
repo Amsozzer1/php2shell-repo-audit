@@ -1,0 +1,78 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Replace with the project's toolchain setup, build and test commands.
+      # TEMPLATE.md only exists in the template repo (setup.sh deletes it), so the
+      # template itself passes and a new project fails until it sets real commands.
+      - run: |
+          if [ -f TEMPLATE.md ]; then echo "template repo, nothing to build"; exit 0; fi
+          echo "set build and test commands"; exit 1
+
+  leak-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # Fails the build if a forbidden word appears in tracked files.
+      # Set FORBIDDEN in the repo's Actions variables (Settings > Variables),
+      # e.g. "companyname|productname|targeting" — it stays out of the code.
+      - name: Check for forbidden words
+        env:
+          FORBIDDEN: ${{ vars.FORBIDDEN }}
+        run: |
+          if [ -z "$FORBIDDEN" ]; then echo "FORBIDDEN not set, skipping"; exit 0; fi
+          if git grep -inE "$FORBIDDEN" -- . ':!.github'; then
+            echo "Forbidden word found"; exit 1
+          fi
+
+  authorship:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # On pull requests, check the PR's own head, not GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      # Every commit must be authored and committed by Ahmed, with no tool attribution in the message.
+      - name: Check authors and attribution
+        run: |
+          bad=0
+          # Skip the root commit: "Use this template" creates it under the GitHub account identity.
+          root="$(git rev-list --max-parents=0 HEAD)"
+          while IFS=$'\t' read -r sha an ae cn ce msg; do
+            # Merges and squashes done with GitHub's button are authored by Ahmed's GitHub
+            # no-reply address and committed by GitHub. Those are his actions, so allow them.
+            if [ "$ae" = "105675638+Amsozzer1@users.noreply.github.com" ] && [ "$ce" = "noreply@github.com" ]; then
+              continue
+            fi
+            if [ "$an" != "Ahmed M. Sozzer" ] || [ "$ae" != "ahmed@amsozzer.com" ] || [ "$cn" != "Ahmed M. Sozzer" ]; then
+              echo "::error::$sha has author '$an <$ae>' / committer '$cn <$ce>'"; bad=1
+            fi
+          done < <(git log --format='%H%x09%an%x09%ae%x09%cn%x09%ce%x09%s' HEAD --not $root)
+          if git log --format='%B' HEAD --not $root | grep -iqE '^[[:space:]]*(co-authored-by:|claude-session:|generated with)|🤖'; then
+            echo "::error::A commit message contains tool attribution"; bad=1
+          fi
+          exit $bad
+      # GitHub only credits a commit to an account when its author email is verified on that account.
+      # If this fails, add the email in GitHub Settings > Emails and verify it; past commits relink on their own.
+      - name: Check commits are credited to my GitHub account
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bad=0
+          root="$(git rev-list --max-parents=0 HEAD)"
+          for sha in $(git log -n 100 --format=%H HEAD --not $root); do
+            login="$(gh api "repos/${{ github.repository }}/commits/$sha" --jq '.author.login // ""')"
+            if [ "$login" != "Amsozzer1" ]; then
+              echo "::error::$sha is not credited to GitHub user Amsozzer1 (author email not verified on the account?)"; bad=1
+            fi
+          done
+          exit $bad

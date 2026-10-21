@@ -1,0 +1,9 @@
+# One word or phrase per line. Case-insensitive. Checked by .githooks/pre-commit.
+# Target company, its products, and anything implying knowledge of its internals:
+# acme
+# acmebot
+# Employer and clients:
+[removed]
+[removed]
+[removed]
+[removed]

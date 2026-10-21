@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Blocks commits that contain a forbidden word (target company, product, employer, clients).
+# The list lives in .private/forbidden.txt, one word or phrase per line, so it never gets committed.
+set -euo pipefail
+list=".private/forbidden.txt"
+[ -f "$list" ] || exit 0
+
+pattern="$(grep -vE '^\s*(#|$)' "$list" | paste -sd'|' -)"
+[ -n "$pattern" ] || exit 0
+
+# Check the staged content of every staged file.
+hits="$(git diff --cached --name-only --diff-filter=ACM -z | xargs -0 -r git grep --cached -inE "$pattern" -- 2>/dev/null || true)"
+# Also check staged file names.
+names="$(git diff --cached --name-only --diff-filter=ACMR | grep -iE "$pattern" || true)"
+
+if [ -n "$hits$names" ]; then
+  echo "pre-commit: forbidden word found (see .private/forbidden.txt):" >&2
+  [ -n "$hits" ] && echo "$hits" >&2
+  [ -n "$names" ] && echo "file name: $names" >&2
+  exit 1
+fi
