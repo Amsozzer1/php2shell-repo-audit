@@ -84,3 +84,21 @@ test("with an 8.6 entry but no fixed version, an exact RC pin is pending-fix", (
   assert.deepEqual(validateTable(p), []);
   assert.equal(verdict(tags.exactRc, p), "manual/pending-fix");
 });
+
+test("a pre-release of the fixed patch is below the fix: ACTION REQUIRED vulnerable, never DECLARED ≥ FIXED", () => {
+  // Hypothetical table for this test only: 8.4 fixed in 8.4.27. Not a claim about php.net's advisory.
+  const t = table("hypothetical");
+  const t84 = { ...t, branches: { ...t.branches, "8.4": { fixed: "8.4.27" } } };
+  assert.deepEqual(validateTable(t84), []);
+  const image = detectDockerfile("Dockerfile", "FROM php:8.4.27RC1-fpm\n")[0]!;
+  const setup = detectYaml(".github/workflows/ci.yml", "    steps:\n      - uses: shivammathur/setup-php@v2\n        with:\n          php-version: '8.4.27RC1'\n")[0]!;
+  assert.deepEqual([image.kind, setup.kind], ["official-image", "setup-php"]);
+  for (const d of [image, setup, decl("official-image", "8.4.27RC1"), decl("php-version-file", "8.4.27RC1"), decl("tool-versions", "8.4.27RC1")]) {
+    const r = classify(d, t84);
+    assert.equal(`${r.bucket}/${r.reason}`, "action/vulnerable", `${d.kind} ${d.version}`);
+    assert.match(r.message, /8\.4\.27/);
+  }
+  // At or above the fix, setup-php still can't prove the patch it installs.
+  assert.equal(verdict(decl("setup-php", "8.4.27", { context: "ci" }), t84), "manual/floating-rebuild");
+  assert.equal(verdict(decl("official-image", "8.4.27"), t84), "fixed/declared-fixed");
+});

@@ -79,7 +79,13 @@ export function classify(d: Declaration, table: FixTable): Finding {
     return f(d, "manual", "unknown-branch", branch, v.pre ? `${v.raw} is a pre-release on a branch with no entry in the fix table; check it manually` : `${branch} is not a branch in the fix table`);
 
   const exact = (d.kind === "official-image" || d.kind === "tool-versions") && v.patch !== null;
-  if (!exact) return f(d, "manual", "floating-rebuild", branch, floatingMessage(d, branch));
+  if (!exact) {
+    // A non-exact source (setup-php, .php-version) that explicitly names a pre-release below the fix
+    // is asking for a build older than the fix: ACTION REQUIRED. Anything else stays manual.
+    if (v.pre && v.patch !== null && entry.fixed !== null && compareExact(v, parseVersion(entry.fixed)!) < 0)
+      return f(d, "action", "vulnerable", branch, `declares pre-release ${v.raw}, below the fix in ${entry.fixed}; upgrade`);
+    return f(d, "manual", "floating-rebuild", branch, floatingMessage(d, branch));
+  }
 
   if (entry.affected === false)
     return f(d, "fixed", "not-affected", branch, "advisory lists this branch as not affected; runtime not verified");
