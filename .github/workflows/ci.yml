@@ -19,6 +19,41 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Run the packed tarball on the demo repo
+        run: |
+          npm pack --silent
+          set +e
+          npx -y ./php2shell-repo-audit-*.tgz examples/demo-repo --offline --fixes test/fixtures/fixes.pending.json
+          code=$?
+          set -e
+          test "$code" = 1
+
+  action-self-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - id: audit
+        uses: ./
+        continue-on-error: true
+        with:
+          path: examples/demo-repo
+          source: local
+          args: --offline --fixes test/fixtures/fixes.hypothetical.json
+      - name: Check the Action failed with exit 1 and the expected counts
+        env:
+          OUTCOME: ${{ steps.audit.outcome }}
+          CODE: ${{ steps.audit.outputs.exit-code }}
+          COUNTS: ${{ steps.audit.outputs.action-required }}/${{ steps.audit.outputs.check-manually }}/${{ steps.audit.outputs.declared-fixed }}
+        run: |
+          echo "outcome=$OUTCOME code=$CODE counts=$COUNTS"
+          test "$OUTCOME" = failure
+          test "$CODE" = 1
+          test "$COUNTS" = 3/4/0
 
   leak-check:
     runs-on: ubuntu-24.04

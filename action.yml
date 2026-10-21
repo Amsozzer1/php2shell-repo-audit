@@ -1,0 +1,78 @@
+name: php2shell-repo-audit
+description: Lists the PHP versions this repo declares and sorts them by what needs the php2shell fix (CVE-2026-109618, CVE-2026-109619).
+author: Ahmed M. Sozzer
+branding:
+  icon: list
+  color: orange
+
+inputs:
+  path:
+    description: Folder to scan, relative to the workspace.
+    default: "."
+  version:
+    description: npm version of php2shell-repo-audit to run.
+    default: "0.1.0"
+  source:
+    description: "npm (run the published package) or local (run this checkout's build; used by this repo's own CI)."
+    default: npm
+  fail-on:
+    description: "manual (fail on ACTION REQUIRED and on CHECK MANUALLY) or action (fail only on ACTION REQUIRED). A scan that finds nothing always fails."
+    default: manual
+  args:
+    description: Extra CLI arguments, e.g. "--offline".
+    default: ""
+
+outputs:
+  exit-code:
+    description: "CLI exit code: 0, 1 (action required), 3 (manual check), 4 (nothing found), 2 (error)."
+    value: ${{ steps.scan.outputs.exit-code }}
+  action-required:
+    description: Number of ACTION REQUIRED findings.
+    value: ${{ steps.scan.outputs.action-required }}
+  check-manually:
+    description: Number of CHECK MANUALLY findings.
+    value: ${{ steps.scan.outputs.check-manually }}
+  declared-fixed:
+    description: Number of DECLARED ≥ FIXED findings.
+    value: ${{ steps.scan.outputs.declared-fixed }}
+
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        P2S_PATH: ${{ inputs.path }}
+        P2S_VERSION: ${{ inputs.version }}
+        P2S_SOURCE: ${{ inputs.source }}
+        P2S_FAIL_ON: ${{ inputs.fail-on }}
+        P2S_ARGS: ${{ inputs.args }}
+        P2S_ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set +e
+        if [ "$P2S_SOURCE" = "local" ]; then
+          cmd=(node "$P2S_ACTION_PATH/dist/src/cli.js")
+        else
+          cmd=(npx -y "php2shell-repo-audit@$P2S_VERSION")
+        fi
+        json="$RUNNER_TEMP/php2shell-repo-audit.json"
+        # shellcheck disable=SC2086
+        "${cmd[@]}" "$P2S_PATH" --json $P2S_ARGS > "$json"
+        code=$?
+        if [ "$code" = 2 ]; then echo "::error::php2shell-repo-audit failed"; exit 2; fi
+        # shellcheck disable=SC2086
+        NO_COLOR=1 "${cmd[@]}" "$P2S_PATH" $P2S_ARGS
+        # shellcheck disable=SC2086
+        "${cmd[@]}" "$P2S_PATH" --summary $P2S_ARGS >> "$GITHUB_STEP_SUMMARY"
+        node -e '
+          const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+          const out = [
+            "exit-code=" + r.exitCode,
+            "action-required=" + r.counts.actionRequired,
+            "check-manually=" + r.counts.checkManually,
+            "declared-fixed=" + r.counts.declaredFixed,
+          ];
+          require("fs").appendFileSync(process.env.GITHUB_OUTPUT, out.join("\n") + "\n");
+        ' "$json"
+        if [ "$code" = 3 ] && [ "$P2S_FAIL_ON" = "action" ]; then code=0; fi
+        exit "$code"

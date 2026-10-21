@@ -26,3 +26,6 @@ __pycache__/
 
 # Corpus clones (fetched by scripts/fetch-corpus.sh)
 .corpus/
+
+# npm pack output
+*.tgz
