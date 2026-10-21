@@ -30,6 +30,13 @@ test("demo repo with the hypothetical table: 3 / 4 / 0, exit 1", () => {
   assert.deepEqual(counts([demo, "--offline", "--fixes", `${FIXTURES}fixes.hypothetical.json`]), [3, 4, 0, 1]);
 });
 
+test("JSON has schemaVersion 1 and a fix string on every finding", () => {
+  const r = run([demo, "--offline", "--fixes", `${FIXTURES}fixes.pending.json`, "--json"]);
+  const j = JSON.parse(r.out) as { schemaVersion: number; findings: Array<{ fix: string; reason: string }> };
+  assert.equal(j.schemaVersion, 1);
+  for (const f of j.findings) assert.ok(f.fix.length > 20, f.reason);
+});
+
 test("text output shows all three buckets, the header and the disclaimer", () => {
   const r = run([demo, "--offline", "--fixes", `${FIXTURES}fixes.pending.json`]);
   assert.equal(r.code, 1);

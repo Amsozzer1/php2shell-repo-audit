@@ -20,6 +20,15 @@ Enter
 Wait+Screen@90s /WARM2/
 Type "clear"
 Enter
+# First frame (what LinkedIn and link previews show): the result, not an empty terminal.
+Type "npx php2shell-repo-audit@0.1.0 demo-repo"
+Enter
+Wait+Screen@20s /exit \d/
+Show
+Sleep 1500ms
+Hide
+Type "clear"
+Enter
 Sleep 300ms
 Show
 

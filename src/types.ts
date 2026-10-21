@@ -27,20 +27,23 @@ export interface Declaration {
 
 export type Bucket = "action" | "manual" | "fixed";
 
-export type Reason =
-  | "eol"
-  | "vulnerable"
-  | "declared-fixed"
-  | "not-affected"
-  | "pending-fix"
-  | "unknown-branch"
-  | "floating-rebuild"
-  | "build-arg"
-  | "unresolved"
-  | "digest"
-  | "third-party-image"
-  | "distro-vendor"
-  | "constraint-only";
+export const REASONS = [
+  "eol",
+  "vulnerable",
+  "declared-fixed",
+  "not-affected",
+  "pending-fix",
+  "unknown-branch",
+  "floating-rebuild",
+  "build-arg",
+  "unresolved",
+  "digest",
+  "third-party-image",
+  "distro-vendor",
+  "constraint-only",
+] as const;
+
+export type Reason = (typeof REASONS)[number];
 
 export interface Finding extends Declaration {
   bucket: Bucket;

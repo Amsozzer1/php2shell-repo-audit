@@ -4,7 +4,9 @@ By [Ahmed Sozzer](https://amsozzer.com) · [github.com/Amsozzer1](https://github
 
 php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
 
+<!-- intro:start -->
 php2shell is two critical bugs in PHP itself; php.net publishes the fixed versions at 14:00 UTC on 21 Oct 2026. The first question is which of your repos and images run a PHP that needs the fix. `grep "FROM php:"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files in one repo or a GitHub org. It does not check running servers.
+<!-- intro:end -->
 
 ## Check in 60 seconds, without this tool
 
@@ -21,14 +23,18 @@ docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION, PHP_EOL;'
 docker build --pull .
 ```
 
-Compare what you see with the fixed versions in [php.net's advisory](https://www.php.net/archive/2026.php).
+<!-- compare:start -->
+Compare what you see with the fixed versions in [php.net's advisory](https://www.php.net/archive/2026.php) when it is published at 14:00 UTC on 21 Oct 2026.
+<!-- compare:end -->
 
 ## Run it on a repo or a GitHub org
 
-0.1.0 is published after php.net's advisory at 14:00 UTC.
+<!-- release-note:start -->
+0.1.0 is published after php.net's advisory at 14:00 UTC. Until then, `npx php2shell-repo-audit` runs the release candidate, whose fix table has no fixed versions yet, so nothing is marked fixed.
+<!-- release-note:end -->
 
 ```sh
-npx php2shell-repo-audit@0.1.0 path/to/repo
+npx php2shell-repo-audit path/to/repo
 ```
 
 Node 20 or newer. No runtime dependencies. On a local repo the only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
@@ -36,8 +42,8 @@ Node 20 or newer. No runtime dependencies. On a local repo the only network call
 To inventory the repos in a GitHub organization or user account, read-only:
 
 ```sh
-npx php2shell-repo-audit@0.1.0 --org your-org                         # buckets grouped by repo
-npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
+npx php2shell-repo-audit --org your-org                         # buckets grouped by repo
+npx php2shell-repo-audit --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
 ```
 
 - The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough. It only sees repos the token can read, so check the repo count it prints against what you expect.
@@ -95,10 +101,10 @@ Measured on 10 public PHP repos pinned to commit SHAs on 21 Oct 2026 (`results/c
 |---|---|---|---|
 | Held out (4 repos, 42 labels), measured once | **This tool** | **36 / 42 (86%)** | 1 |
 | | Baseline: `grep -rnE "FROM +php:"` | 16 / 42 (38%) | 0 |
-| Tuning (6 repos, 70 labels), first run | **This tool** | 58 / 69 (84%) | 3 |
+| Tuning (6 repos, 69 labels at the time), first run | **This tool** | 58 / 69 (84%) | 3 |
 | | Baseline: `grep -rnE "FROM +php:"` | 31 / 69 (45%) | 0 |
 
-The first run on the tuning repos found real gaps (Dockerfile names like `Dockerfile-fpm`, setup-php versions set through `env:` or passed to reusable workflows, `matrix.exclude` entries read as versions). I fixed them and the tuning set went to 70/70, but that number was tuned on the same repos, so it isn't in the table. The held-out repos were labeled after those fixes and measured once. Their 6 misses (setup-php referenced by full URL, Debian's `libapache2-mod-php`, an Arch `pacman` install) are fixed in this release too, which makes the held-out number a measurement of the code before those fixes. Every run is in [`results/runs/`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/runs/README.md).
+The first run on the tuning repos found real gaps (Dockerfile names like `Dockerfile-fpm`, setup-php versions set through `env:` or passed to reusable workflows, `matrix.exclude` entries read as versions). I fixed them and the tuning set went to 70/70, but that number was tuned on the same repos, so it isn't in the table. The held-out repos were labeled after those fixes and measured once. Their 6 misses (setup-php referenced by full URL, Debian's `libapache2-mod-php`, an Arch `pacman` install) are fixed in this release too, which makes the held-out number a measurement of the code before those fixes. The tuning set has 70 labels now: one label the labeling pass missed was added after the first run (recorded under `corrections` in `results/labels.json`), so the first run is scored out of 69 and later runs out of 70. Every run is in [`results/runs/`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/runs/README.md).
 
 **111 of the 112 labeled declarations can't prove which PHP build runs.** They are floating image tags, setup-php versions, distro packages, Sail runtimes, images that bundle PHP, templated tags and composer constraints. Only one is an exact pin (`.tool-versions` with a patch version). That is why most findings land in CHECK MANUALLY.
 
@@ -109,11 +115,13 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 
 ## How it works
 
+<!-- how-it-works:start -->
 - Walks the repo (skipping `node_modules`, `vendor`, `.git` and files over 1 MB) and reads Dockerfiles and Containerfiles, YAML files (compose, Kubernetes, GitHub Actions, GitLab CI, Forgejo), `.php-version`, `.tool-versions` and `composer.json`. YAML is read line by line, without a YAML library.
 - Each declaration gets a kind (official `php` image, digest, ARG default, image that bundles PHP, distro package, Sail runtime, setup-php, version file, composer) and a context (prod, ci, dev).
-- A fix table from php.net (`fixes/fixes.json`) decides the bucket. Before php.net publishes, every branch is pending, so nothing can be marked fixed.
+- A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.
 - The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because no fix will ship for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
 - A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add "not affected", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.
+<!-- how-it-works:end -->
 
 | Bucket | Reason codes |
 |---|---|
@@ -130,11 +138,33 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 - Anything built outside the repo, and the image that is actually deployed. For that, use the `docker run` line above.
 - Images it doesn't recognize as bundling PHP. It recognizes `wordpress`, `drupal`, `joomla`, `nextcloud`, `matomo`, `phpmyadmin`, `composer`, `dunglas/frankenphp`, `laravelsail/*`, `bitnami/php-fpm`, `bitnami/wordpress`, `bitnami/laravel`, `serversideup/php`, `webdevops/php*`, `thecodingmachine/php`, `shinsenter/*`, `chialab/php`, and any image whose last name part contains `php`.
 
+## What to do for each finding
+
+The tool doesn't change anything. Each finding has a reason code; this is what to do about it. The same text is in `--json` as `fix` on every finding.
+
+<!-- fix-guide:start -->
+| Reason | What to do |
+|---|---|
+| `eol` | Move to a supported PHP branch (8.2 or newer), rebuild and redeploy. 5.x, 7.x, 8.0 and 8.1 get no fixes from php.net. |
+| `vulnerable` | Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy. |
+| `floating-rebuild` | After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`. |
+| `pending-fix` | php.net has no fixed version in the table for this branch yet. Re-run after the advisory; if the pin is below the fix, change it. |
+| `distro-vendor` | Install your vendor's security update (`apt-get update && apt-get install --only-upgrade 'php*'`, `apk upgrade`, or `dnf upgrade 'php*'`), rebuild, and check the package version against the vendor's security tracker. |
+| `third-party-image` | Check the image maintainer's release for a rebuild on the fixed PHP, pull it with `docker pull <image>`, redeploy, and confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`. |
+| `build-arg` | Find the value your build actually passes (`--build-arg`, compose `args:`, CI) and check that version; the default in the file can be overridden. |
+| `digest` | Run `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'` on the pinned digest. If it's below the fix, move to a rebuilt image and update the digest. |
+| `constraint-only` | Nothing to change for the runtime. A composer constraint doesn't choose the PHP that runs; check the other findings or the running image. |
+| `unresolved` | Find where the variable or matrix value is set (CI, compose, .env) and check that version by hand. |
+| `unknown-branch` | Check this version by hand against php.net's advisory. It is a pre-release or a branch that isn't in the fix table. |
+| `declared-fixed` | Nothing to change in what the repo declares. Confirm the deployed runtime with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`. |
+| `not-affected` | Nothing to change in what the repo declares. Confirm the deployed runtime with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`. |
+<!-- fix-guide:end -->
+
 ## php2shell questions
 
 ### How do I check if my repos are affected by php2shell (CVE-2026-109618, CVE-2026-109619)?
 
-php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit@0.1.0 path/to/repo` for one repo, or `npx php2shell-repo-audit@0.1.0 --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
+php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit path/to/repo` for one repo, or `npx php2shell-repo-audit --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
 
 ### Does it check my servers or running containers?
 
@@ -146,7 +176,9 @@ No. It compares the PHP versions a repo declares with the fixed versions php.net
 
 ### Which PHP versions fix CVE-2026-109618 and CVE-2026-109619?
 
+<!-- fixed-versions:start -->
 php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is `pending` and nothing can be marked fixed. 5.x, 7.x, 8.0 and 8.1 are past end of life in php.net's support policy, so the tool marks them ACTION REQUIRED. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
+<!-- fixed-versions:end -->
 
 ### Is `php:8.3-fpm` fixed?
 
@@ -162,7 +194,7 @@ Not reliably. Distro vendors backport fixes without changing the upstream versio
 
 ### How do I run it across a GitHub org?
 
-Run `npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
+Run `npx php2shell-repo-audit --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
 
 ### How do I run a php2shell check in GitHub Actions?
 
@@ -187,6 +219,91 @@ php2shell-repo-audit prints plain text, JSON (`--json`) and Markdown (`--markdow
 | 2 | Error |
 
 A composer constraint alone doesn't keep the check at 3 when the repo also declares a production runtime. With `--org`, repos that declare no PHP are listed and don't change the exit code; 4 means no repo declares PHP. The Action fails on 1, 3 and 4 by default; `fail-on: action` turns 3 into a pass, and 4 always fails. Flags: `--json`, `--markdown` (also `--summary`), `--offline`, `--fixes <file>`. Set `NO_COLOR` to turn colour off. In a terminal narrower than 100 columns the text output switches to a compact layout (declared line, then file, line and reason); `--json` has the full messages.
+
+## JSON output
+
+`--json` prints one object. The shape is stable within 0.x: `schemaVersion` is 1, fields may be added, and a field is only renamed or removed with a new `schemaVersion`. With `--org`, the same finding objects are grouped under `repos[]`.
+
+<!-- json:start -->
+Real output for `examples/demo-repo` with the fix table in this repo (`--offline`), with `findings` trimmed to 2 of 7:
+
+```json
+{
+  "schemaVersion": 1,
+  "tool": "php2shell-repo-audit",
+  "version": "0.1.0",
+  "fixTable": {
+    "origin": "bundled",
+    "revision": 1,
+    "status": "pending",
+    "publishedAt": null,
+    "source": "https://www.php.net/archive/2026.php"
+  },
+  "warnings": [],
+  "counts": {
+    "actionRequired": 1,
+    "checkManually": 6,
+    "declaredFixed": 0
+  },
+  "exitCode": 1,
+  "exitReason": "action required",
+  "filesRead": 7,
+  "skipped": [],
+  "runtimeCheck": "docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'",
+  "findings": [
+    {
+      "bucket": "manual",
+      "reason": "floating-rebuild",
+      "file": ".github/workflows/ci.yml",
+      "line": 10,
+      "context": "ci",
+      "kind": "setup-php",
+      "declared": "setup-php 8.3",
+      "version": "8.3",
+      "branch": "8.3",
+      "message": "setup-php installs the current or pre-installed 8.3 patch, not a pinned build",
+      "fix": "After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`."
+    },
+    {
+      "bucket": "manual",
+      "reason": "pending-fix",
+      "file": ".tool-versions",
+      "line": 2,
+      "context": "dev",
+      "kind": "tool-versions",
+      "declared": "php 8.4.20",
+      "version": "8.4.20",
+      "branch": "8.4",
+      "message": "php.net has not published the fixed 8.4 version",
+      "fix": "php.net has no fixed version in the table for this branch yet. Re-run after the advisory; if the pin is below the fix, change it."
+    }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `schemaVersion` | Shape version of this output, currently 1 |
+| `tool`, `version` | Tool name and version |
+| `fixTable` | The fix table used: `origin` (remote, bundled or file), `revision`, `status` (pending or published), `publishedAt`, `source` (php.net advisory URL) |
+| `warnings` | Problems loading the remote fix table, if any |
+| `counts` | `actionRequired`, `checkManually`, `declaredFixed` |
+| `exitCode`, `exitReason` | The process exit code and why (see Exit codes) |
+| `filesRead` | Candidate files read |
+| `skipped` | Candidate files skipped (too big or unreadable) |
+| `runtimeCheck` | The `docker run` command that shows the real PHP version of an image |
+| `findings[]` | One object per declaration |
+| `findings[].bucket` | `action`, `manual` or `fixed` (DECLARED ≥ FIXED) |
+| `findings[].reason` | Reason code (see What to do for each finding) |
+| `findings[].file`, `.line` | Where the declaration is, relative to the scanned folder |
+| `findings[].context` | `prod`, `ci` or `dev`, guessed from the path |
+| `findings[].kind` | Declaration kind, e.g. `official-image`, `setup-php`, `distro`, `composer` |
+| `findings[].declared` | The declaration as written, shortened |
+| `findings[].version` | The version string as declared, or null |
+| `findings[].branch` | PHP branch, e.g. `8.3`, or null |
+| `findings[].message` | Why it landed in this bucket |
+| `findings[].fix` | What to do about it |
+<!-- json:end -->
 
 ## Build and test from a clean clone
 

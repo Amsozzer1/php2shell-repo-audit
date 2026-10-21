@@ -2,7 +2,7 @@
 import type { LoadedFixes } from "./fixes.js";
 import { plural, type OrgScan } from "./org.js";
 import type { Bucket } from "./types.js";
-import { buildReport, findingJson, paint, renderBuckets, tableLine, type Report } from "./report.js";
+import { buildReport, findingJson, JSON_SCHEMA_VERSION, paint, renderBuckets, tableLine, type Report } from "./report.js";
 import { RUNTIME_CHECK } from "./verdict.js";
 
 export interface OrgReport {
@@ -89,6 +89,7 @@ export function renderOrgText(r: OrgReport, color: boolean): string {
 export function renderOrgJson(r: OrgReport): string {
   return JSON.stringify(
     {
+      schemaVersion: JSON_SCHEMA_VERSION,
       tool: r.tool,
       version: r.version,
       org: r.org,

@@ -1,0 +1,37 @@
+# php2shell-repo-audit
+
+> php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
+
+php2shell is CVE-2026-109618 and CVE-2026-109619. The tool reads files in git (with --org, the GitHub REST API, read-only). It does not check running servers and does not test for the bug.
+Fix table: php.net's fixed versions are due at 14:00 UTC on 21 Oct 2026; until they are in the table, nothing is marked fixed.
+
+## Commands
+- One repo: `npx php2shell-repo-audit path/to/repo`
+- A GitHub org or user account (read-only): `npx php2shell-repo-audit --org your-org`
+- Summary for an incident channel: `npx php2shell-repo-audit --org your-org --markdown`
+- JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit path/to/repo --json`
+
+## Exit codes
+- `0`: Nothing needs action or a manual check in what this repo declares, and at least one production runtime is declared. This is not a statement about your servers.
+- `1`: Something is ACTION REQUIRED
+- `3`: Something needs a manual check, a candidate file was skipped, or no production runtime is declared
+- `4`: No PHP declarations found: the tool couldn't see your runtime
+- `2`: Error
+
+## What this does not catch
+- Servers and shared hosting that aren't described in git: cPanel, Plesk, `.htaccess` PHP handlers.
+- PaaS and managed runtimes: Platform.sh, Upsun, DDEV, Laravel Vapor, Bref, App Engine, Azure App Service, Elastic Beanstalk, Forge, Laravel Cloud, Heroku, Railway and Nixpacks.
+- Distro backports. A Debian or RHEL package can be fixed without its version changing, so distro installs always go to CHECK MANUALLY.
+- Helm and Kustomize templates, compose `extends:`, GitLab `include:`, and versions set in `.env` files.
+- Anything built outside the repo, and the image that is actually deployed. For that, use `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`.
+- Images it doesn't recognize as bundling PHP. It recognizes `wordpress`, `drupal`, `joomla`, `nextcloud`, `matomo`, `phpmyadmin`, `composer`, `dunglas/frankenphp`, `laravelsail/*`, `bitnami/php-fpm`, `bitnami/wordpress`, `bitnami/laravel`, `serversideup/php`, `webdevops/php*`, `thecodingmachine/php`, `shinsenter/*`, `chialab/php`, and any image whose last name part contains `php`.
+
+## README sections
+- [Check in 60 seconds, without this tool](https://github.com/Amsozzer1/php2shell-repo-audit#check-in-60-seconds-without-this-tool)
+- [Run it on a repo or a GitHub org](https://github.com/Amsozzer1/php2shell-repo-audit#run-it-on-a-repo-or-a-github-org)
+- [What to do for each finding](https://github.com/Amsozzer1/php2shell-repo-audit#what-to-do-for-each-finding)
+- [Exit codes](https://github.com/Amsozzer1/php2shell-repo-audit#exit-codes)
+- [JSON output](https://github.com/Amsozzer1/php2shell-repo-audit#json-output)
+- [php2shell questions](https://github.com/Amsozzer1/php2shell-repo-audit#php2shell-questions)
+- [Results](https://github.com/Amsozzer1/php2shell-repo-audit#results)
+- [Fix table](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json)

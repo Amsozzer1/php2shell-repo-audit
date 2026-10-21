@@ -149,3 +149,11 @@ test("exit codes", () => {
   assert.match(r.why, /no production runtime/);
   assert.equal(exitCode([devPin], 0).code, 3);
 });
+
+test("every reason code has a fix string", async () => {
+  const { REASONS } = await import("../src/types.js");
+  const { FIX_GUIDE } = await import("../src/fixes-guide.js");
+  for (const r of REASONS) assert.ok(FIX_GUIDE[r] && FIX_GUIDE[r].length > 20, r);
+  assert.deepEqual(Object.keys(FIX_GUIDE).sort(), [...REASONS].sort());
+  for (const t of Object.values(FIX_GUIDE)) assert.doesNotMatch(t, /\bsafe\b|auto-?remediat/i);
+});

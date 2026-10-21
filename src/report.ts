@@ -2,6 +2,10 @@
 import type { Bucket, Finding } from "./types.js";
 import type { LoadedFixes } from "./fixes.js";
 import { classify, exitCode, RUNTIME_CHECK, type ExitResult } from "./verdict.js";
+import { FIX_GUIDE } from "./fixes-guide.js";
+
+// Bumped only if a field is renamed or removed; new fields can be added within a version.
+export const JSON_SCHEMA_VERSION = 1;
 import type { ScanResult } from "./scan.js";
 
 export interface Report {
@@ -146,6 +150,7 @@ export function renderTextCompact(r: Report, color: boolean, width: number): str
 export function renderJson(r: Report): string {
   return JSON.stringify(
     {
+      schemaVersion: JSON_SCHEMA_VERSION,
       tool: r.tool,
       version: r.version,
       fixTable: r.fixTable,
@@ -175,6 +180,7 @@ export function findingJson(f: Finding) {
     version: f.version,
     branch: f.branch,
     message: f.message,
+    fix: FIX_GUIDE[f.reason],
   };
 }
 

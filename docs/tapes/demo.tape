@@ -15,6 +15,15 @@ Type "node scripts/mock-github.mjs test/fixtures/org/example-org.json 8765 >/dev
 Enter
 Type "export PS1='$ ' GITHUB_API_URL=http://127.0.0.1:8765 GH_TOKEN=demo && alias php2shell-repo-audit='node dist/src/cli.js' && clear"
 Enter
+# First frame (what npm, PDFs and link previews show): the result, not an empty terminal.
+Type "php2shell-repo-audit examples/demo-repo"
+Enter
+Wait+Screen@20s /exit \d/
+Show
+Sleep 2s
+Hide
+Type "clear"
+Enter
 Show
 
 Sleep 500ms
