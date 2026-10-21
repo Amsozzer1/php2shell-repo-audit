@@ -11,7 +11,7 @@ inputs:
     default: "."
   version:
     description: npm version of php2shell-repo-audit to run.
-    default: "0.1.0"
+    default: "0.1.1"
   source:
     description: "npm (run the published package) or local (run this checkout's build; used by this repo's own CI)."
     default: npm

@@ -1,6 +1,6 @@
 {
   "name": "php2shell-repo-audit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "php2shell (CVE-2026-109618, CVE-2026-109619) CLI and GitHub Action: sorts the PHP versions it finds in Dockerfiles, CI and composer.json by what needs the fix.",
   "type": "module",
   "bin": {

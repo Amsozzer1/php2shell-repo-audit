@@ -6,11 +6,13 @@ php2shell is CVE-2026-109618 and CVE-2026-109619. The tool reads files in git (w
 Fix table: rev 2, from php.net's advisory of 2026-10-21 (https://www.php.net/archive/2026.php#2026-10-21-5): 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35.
 
 ## Commands
-- One repo: `npx php2shell-repo-audit@0.1.0 path/to/repo`
-- A GitHub org or user account (read-only): `npx php2shell-repo-audit@0.1.0 --org your-org`
-- Summary for an incident channel: `npx php2shell-repo-audit@0.1.0 --org your-org --markdown`
-- JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit@0.1.0 path/to/repo --json`
-- GitHub Action: `uses: Amsozzer1/php2shell-repo-audit@v0.1.0`
+- One repo: `npx php2shell-repo-audit@0.1.1 path/to/repo`
+- A GitHub org or user account (read-only): `npx php2shell-repo-audit@0.1.1 --org your-org`
+- One GitHub repo without cloning (token optional for public repos): `npx php2shell-repo-audit@0.1.1 --repo owner/name`
+- Summary for an incident channel: `npx php2shell-repo-audit@0.1.1 --org your-org --markdown`
+- Has Docker Hub rebuilt a floating php tag yet: `npx php2shell-repo-audit@0.1.1 path/to/repo --check-upstream`
+- JSON (schemaVersion 1, a `fix` string on every finding): `npx php2shell-repo-audit@0.1.1 path/to/repo --json`
+- GitHub Action: `uses: Amsozzer1/php2shell-repo-audit@v0.1.1`
 
 ## Exit codes
 - `0`: Nothing needs action or a manual check in what this repo declares, and at least one production runtime is declared. This is not a statement about your servers.

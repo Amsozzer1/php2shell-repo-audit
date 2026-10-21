@@ -35,7 +35,7 @@ Compare what you see with the fixed versions in [php.net's advisory](https://www
 <!-- release-note:end -->
 
 ```sh
-npx php2shell-repo-audit@0.1.0 path/to/repo
+npx php2shell-repo-audit@0.1.1 path/to/repo
 ```
 
 Node 20 or newer. No runtime dependencies. On a local repo the only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
@@ -43,8 +43,8 @@ Node 20 or newer. No runtime dependencies. On a local repo the only network call
 To inventory the repos in a GitHub organization or user account, read-only:
 
 ```sh
-npx php2shell-repo-audit@0.1.0 --org your-org                         # buckets grouped by repo
-npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
+npx php2shell-repo-audit@0.1.1 --org your-org                         # buckets grouped by repo
+npx php2shell-repo-audit@0.1.1 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
 ```
 
 - The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough. It only sees repos the token can read, so check the repo count it prints against what you expect.
@@ -53,6 +53,22 @@ npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # shor
 - It reads the rate-limit headers, waits for the reset when few requests are left or a limit is hit, and prints progress to stderr. For GitHub Enterprise, set `GITHUB_API_URL`.
 
 <!-- repo-and-upstream:start -->
+To scan one GitHub repo without cloning it:
+
+```sh
+npx php2shell-repo-audit@0.1.1 --repo laravel/laravel
+npx php2shell-repo-audit@0.1.1 --repo your-org/your-app --json
+```
+
+It reads the default branch the same way as `--org`. A token is optional for public repos; without one, GitHub allows 60 API requests an hour.
+
+For floating official tags such as `php:8.3-fpm`, `--check-upstream` asks Docker Hub whether the tag has been rebuilt with the fixed version yet:
+
+```sh
+npx php2shell-repo-audit@0.1.1 path/to/repo --check-upstream
+```
+
+It reads the tag's current digest and the `PHP_VERSION` its linux/amd64 image sets, and the message says "upstream rebuilt with 8.3.x, rebuild and redeploy now" or "not rebuilt yet, check again later". The finding stays in CHECK MANUALLY either way, because your own image is old until you rebuild it. Docker Hub rate limits anonymous requests, so lookups are cached per run and a failure falls back to the normal message.
 <!-- repo-and-upstream:end -->
 
 As a GitHub Action:
@@ -76,16 +92,16 @@ Output on the demo repo:
 <!-- sample:start -->
 ```text
 $ php2shell-repo-audit examples/demo-repo
-php2shell-repo-audit 0.1.0  ·  fix table rev 2: published 2026-10-21, https://www.php.net/archive/2026.php#2026-10-21-5
+php2shell-repo-audit 0.1.1  ·  fix table rev 2: published 2026-10-21, https://www.php.net/archive/2026.php#2026-10-21-5
 Reads PHP versions declared in this repo. It does not check running servers.
 
 ACTION REQUIRED (3)
-  .tool-versions:2             dev   php 8.4.20                  vulnerable: fixed in 8.4.27, upgrade
+  .tool-versions:2             dev   php 8.4.20                  vulnerable: fixed in 8.4.27, upgrade (dev-only, lower exposure than a web-serving runtime; still update)
   docker/api/Dockerfile:1      prod  FROM php:8.3.30-fpm         vulnerable: fixed in 8.3.36, upgrade
   docker/legacy/Dockerfile:1   prod  FROM php:8.1-fpm            eol: no official php.net release for 8.1; upgrade, use your vendor's backport, or build from php.net's backport branch PHP-8.1-CVE-2026-109618-109619
 
 CHECK MANUALLY (4)
-  .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build
+  .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build (CI-only CLI, lower exposure than a web-serving runtime; still update)
   Dockerfile:1                 prod  FROM php:8.3-fpm            floating-rebuild: rebuild with --pull and redeploy after the release, then confirm with the docker run check
   composer.json:6              prod  "php": "^8.2"               constraint-only: a composer constraint is not the runtime
   docker/worker/Dockerfile:3   prod  apt-get install php8.2-cli  distro-vendor: vendors backport fixes without changing the version; check your vendor's security tracker
@@ -133,6 +149,7 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 - A fix table from php.net (`fixes/fixes.json`, rev 2, from the [advisory](https://www.php.net/archive/2026.php#2026-10-21-5) of 2026-10-21) decides the bucket: 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35. On a branch with no fixed version in the table, exact pins stay in CHECK MANUALLY.
 - The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
 - A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add "not affected", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.
+- Context changes the message, never the bucket. php.net's [advisory](https://www.php.net/archive/2026.php#2026-10-21-5) puts the risk on installations that serve web requests (PHP-FPM and mod_php highest, then php-cgi, FrankenPHP and LiteSpeed), so CI and dev findings add "lower exposure than a web-serving runtime; still update" and stay in the same bucket.
 <!-- how-it-works:end -->
 
 | Bucket | Reason codes |
@@ -176,7 +193,7 @@ The tool doesn't change anything. Each finding has a reason code; this is what t
 
 ### How do I check if my repos are affected by php2shell (CVE-2026-109618, CVE-2026-109619)?
 
-php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit@0.1.0 path/to/repo` for one repo, or `npx php2shell-repo-audit@0.1.0 --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
+php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit@0.1.1 path/to/repo` for one repo, or `npx php2shell-repo-audit@0.1.1 --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
 
 ### Does it check my servers or running containers?
 
@@ -217,7 +234,7 @@ Not reliably. Distro vendors backport fixes without changing the upstream versio
 
 ### How do I run it across a GitHub org?
 
-Run `npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
+Run `npx php2shell-repo-audit@0.1.1 --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
 
 ### How do I run a php2shell check in GitHub Actions?
 
@@ -254,7 +271,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
 {
   "schemaVersion": 1,
   "tool": "php2shell-repo-audit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "fixTable": {
     "origin": "bundled",
     "revision": 2,
@@ -284,7 +301,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "declared": "setup-php 8.3",
       "version": "8.3",
       "branch": "8.3",
-      "message": "setup-php installs the current or pre-installed 8.3 patch, not a pinned build",
+      "message": "setup-php installs the current or pre-installed 8.3 patch, not a pinned build (CI-only CLI, lower exposure than a web-serving runtime; still update)",
       "fix": "After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`."
     },
     {
@@ -297,7 +314,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "declared": "php 8.4.20",
       "version": "8.4.20",
       "branch": "8.4",
-      "message": "fixed in 8.4.27, upgrade",
+      "message": "fixed in 8.4.27, upgrade (dev-only, lower exposure than a web-serving runtime; still update)",
       "fix": "Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy."
     }
   ]
@@ -308,6 +325,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
 |---|---|
 | `schemaVersion` | Shape version of this output, currently 1 |
 | `tool`, `version` | Tool name and version |
+| `repo` | With `--repo`: `name` and the `branch` that was read |
 | `fixTable` | The fix table used: `origin` (remote, bundled or file), `revision`, `status` (pending or published), `publishedAt`, `source` (php.net advisory URL) |
 | `warnings` | Problems loading the remote fix table, if any |
 | `counts` | `actionRequired`, `checkManually`, `declaredFixed` |
@@ -326,6 +344,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
 | `findings[].branch` | PHP branch, e.g. `8.3`, or null |
 | `findings[].message` | Why it landed in this bucket |
 | `findings[].fix` | What to do about it |
+| `findings[].upstream` | With `--check-upstream`, on floating official tags: `image`, `digest`, `phpVersion` (what Docker Hub's tag has now) and `rebuilt` (true, false, or null if the table has no fix for that branch) |
 <!-- json:end -->
 
 ## Build and test from a clean clone
