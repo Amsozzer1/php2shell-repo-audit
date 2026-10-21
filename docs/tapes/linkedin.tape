@@ -15,7 +15,9 @@ Set Theme "Builtin Dark"
 
 # Warm the npx cache off camera so the visible run doesn't include the download.
 Hide
-Type "export PS1='$ ' && cd examples && npx -y php2shell-repo-audit@0.1.0 --version >/dev/null 2>&1; echo WARM$((1+1))"
+# npx can't run this package from inside its own repo (npm resolves the local package.json), so the
+# synthetic demo repo is copied next to the output folder, outside the repo, and run from there.
+Type "export PS1='$ ' && cp -R examples/demo-repo ../linkedin-demo/ && cd ../linkedin-demo && npx -y php2shell-repo-audit@0.1.0 --version >/dev/null 2>&1; echo WARM$((1+1))"
 Enter
 Wait+Screen@90s /WARM2/
 Type "clear"
