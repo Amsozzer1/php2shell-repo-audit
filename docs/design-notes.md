@@ -5,7 +5,7 @@ Why each decision was made, what was tried and dropped, and what the numbers cha
 ## 1. Three buckets, and nothing is ever called fine
 **Chose:** ACTION REQUIRED, CHECK MANUALLY, DECLARED ≥ FIXED, each finding with a reason code. DECLARED ≥ FIXED always says "runtime not verified".
 **Because:** a version in a repo is not what runs in production. The worst thing this tool could do is tell someone they're fine when they aren't, so the default for anything unprovable is CHECK MANUALLY.
-**Tried first / what went wrong:** the first plan treated `setup-php php-version: 8.3.30` and `.php-version` as exact pins. setup-php and the tools that read `.php-version` install whatever patch is current or pre-installed, so a declared `8.3.36` could still run an older 8.3. Both are now floating.
+**Tried first / what went wrong:** the first plan treated `setup-php php-version: 8.3.30` and `.php-version` as exact pins. setup-php and the tools that read `.php-version` install whatever patch is current or pre-installed, so a declared version at or above the fix could still run an older 8.3. Both are now floating.
 
 ## 2. Exit codes 3 and 4
 **Chose:** 1 for ACTION REQUIRED, 3 for anything that needs a human, 4 when nothing was found. The Action fails on all three by default.
