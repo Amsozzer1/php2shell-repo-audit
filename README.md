@@ -61,7 +61,7 @@ ACTION REQUIRED (1)
 CHECK MANUALLY (6)
   .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build
   .tool-versions:2             dev   php 8.4.20                  pending-fix: php.net has not published the fixed 8.4 version
-  Dockerfile:1                 prod  FROM php:8.3-fpm            floating-rebuild: fixed only after the release: rebuild with --pull, redeploy, then confirm with the docker run check
+  Dockerfile:1                 prod  FROM php:8.3-fpm            floating-rebuild: rebuild with --pull and redeploy after the release, then confirm with the docker run check
   composer.json:6              prod  "php": "^8.2"               constraint-only: a composer constraint is not the runtime
   docker/api/Dockerfile:1      prod  FROM php:8.3.30-fpm         pending-fix: php.net has not published the fixed 8.3 version
   docker/worker/Dockerfile:3   prod  apt-get install php8.2-cli  distro-vendor: vendors backport fixes without changing the version; check your vendor's security tracker

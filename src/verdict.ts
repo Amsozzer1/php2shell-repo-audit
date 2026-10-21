@@ -24,7 +24,7 @@ function floatingMessage(d: Declaration, branch: string | null): string {
     case "tool-versions":
       return `minor-only version resolves to whatever${b} patch is installed`;
     default: {
-      let m = "fixed only after the release: rebuild with --pull, redeploy, then confirm with " + CHECK;
+      let m = "rebuild with --pull and redeploy after the release, then confirm with " + CHECK;
       if (d.note && OLD_BASE_OS.test(d.note)) m += `; tags on an old base OS (${d.note}) may no longer be rebuilt`;
       return m;
     }
