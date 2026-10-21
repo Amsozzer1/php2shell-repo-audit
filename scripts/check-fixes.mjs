@@ -19,10 +19,20 @@ const confirmedRc = new Set();
 for (let i = 0; i < args.length; i++) if (args[i] === "--confirm-rc") confirmedRc.add(String(args[++i] ?? "").toUpperCase());
 const path = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--confirm-rc") ?? "fixes/fixes.json";
 
+// php.net can return 5xx or time out under release-day load: retry with backoff, never skip.
 async function getJson(url) {
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
-  return res.json();
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (res.ok) return await res.json();
+      if (res.status < 500 || attempt === 4) throw new Error(`${url}: HTTP ${res.status}`);
+      console.warn(`retry ${url}: HTTP ${res.status} (attempt ${attempt} of 4)`);
+    } catch (e) {
+      if (attempt === 4 || /HTTP [1-4]\d\d/.test(e.message)) throw e;
+      console.warn(`retry ${url}: ${e.message} (attempt ${attempt} of 4)`);
+    }
+    await new Promise((r) => setTimeout(r, 5000 * attempt));
+  }
 }
 
 let rcVersions = null;
