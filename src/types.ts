@@ -23,6 +23,7 @@ export interface Declaration {
   context: Context;
   version: string | null; // raw version as declared ("8.3.30", "8.3", "latest", "^8.2"), or null
   note?: string; // extra detail for messages, e.g. the image name
+  tag?: string; // official php image tag as declared, e.g. "8.3-fpm" (used by --check-upstream)
 }
 
 export type Bucket = "action" | "manual" | "fixed";
@@ -50,6 +51,7 @@ export interface Finding extends Declaration {
   reason: Reason;
   branch: string | null;
   message: string;
+  upstream?: { image: string; digest: string; phpVersion: string; rebuilt: boolean | null }; // --check-upstream
 }
 
 export interface BranchFix {

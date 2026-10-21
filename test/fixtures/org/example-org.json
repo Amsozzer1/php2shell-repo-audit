@@ -108,6 +108,159 @@
         }
       ]
     },
+    "/repos/example-org/shop-api": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/shop-api",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/legacy-billing": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/legacy-billing",
+        "default_branch": "master",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/marketing-site": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/marketing-site",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/queue-worker": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/queue-worker",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/frontend": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/frontend",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/old-intranet": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/old-intranet",
+        "default_branch": "main",
+        "archived": true,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/forked-lib": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/forked-lib",
+        "default_branch": "main",
+        "archived": false,
+        "fork": true,
+        "disabled": false,
+        "size": 100
+      }
+    },
+    "/repos/example-org/empty-repo": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-org/empty-repo",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 0
+      }
+    },
+    "/repos/example-user/side-project": {
+      "status": 200,
+      "headers": {
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1792580000",
+        "x-ratelimit-resource": "core"
+      },
+      "body": {
+        "full_name": "example-user/side-project",
+        "default_branch": "main",
+        "archived": false,
+        "fork": false,
+        "disabled": false,
+        "size": 100
+      }
+    },
     "/repos/example-org/shop-api/git/blobs/0001000000000000000000000000000000000000": {
       "status": 200,
       "headers": {

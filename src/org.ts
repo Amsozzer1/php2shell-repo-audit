@@ -45,7 +45,7 @@ async function listRepos(gh: GitHub, org: string): Promise<ApiRepo[]> {
   }
 }
 
-async function scanRepo(gh: GitHub, repo: ApiRepo): Promise<ScanResult> {
+export async function scanRepo(gh: GitHub, repo: ApiRepo): Promise<ScanResult> {
   const result: ScanResult = { declarations: [], filesRead: 0, skipped: [] };
   // Don't trust repo.size: GitHub reports 0 for recently created repos. An empty repo answers 409.
   let tree: { tree: TreeEntry[]; truncated: boolean };
@@ -72,6 +72,17 @@ async function scanRepo(gh: GitHub, repo: ApiRepo): Promise<ScanResult> {
   }
   result.declarations = sortDeclarations(declarations);
   return result;
+}
+
+// --repo owner/name: one repo through the API, without cloning. Archived repos and forks are scanned too.
+export async function getRepo(gh: GitHub, fullName: string): Promise<ApiRepo> {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(fullName)) throw new Error(`--repo needs owner/name, got "${fullName}"`);
+  try {
+    return (await gh.get<ApiRepo>(`/repos/${fullName}`)).body;
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) throw new Error(`${fullName}: repo not found, or not visible without a token that can read it`);
+    throw e;
+  }
 }
 
 export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;

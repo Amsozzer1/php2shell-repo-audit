@@ -213,3 +213,55 @@ test("a repo reported with size 0 is still scanned (GitHub reports 0 for new rep
   const s = await scanOrg(gh, "example-org", quiet);
   assert.ok(s.repos.find((x) => x.name === "example-org/shop-api")!.scan.declarations.length > 0);
 });
+
+test("--repo: one repo through the API, archived and forks included", async () => {
+  const { getRepo, scanRepo } = await import("../src/org.js");
+  const { gh } = client([]);
+  const r = await getRepo(gh, "example-org/forked-lib");
+  assert.equal(r.fork, true);
+  const s = await scanRepo(gh, r);
+  assert.equal(s.declarations.length, 1);
+  await assert.rejects(getRepo(gh, "example-org/missing"), /repo not found, or not visible/);
+  await assert.rejects(getRepo(gh, "not-a-repo"), /owner\/name/);
+});
+
+test("without a token the client sends no Authorization header", async () => {
+  const headers: Array<Record<string, string>> = [];
+  const gh = new GitHub({
+    token: null,
+    fetchImpl: (async (url: string | URL | Request, init?: RequestInit) => {
+      headers.push(init?.headers as Record<string, string>);
+      const r = fx.routes[String(url).slice(fx.api.length)]!;
+      return new Response(JSON.stringify(r.body), { status: r.status, headers: r.headers });
+    }) as typeof fetch,
+    log: () => {},
+  });
+  await gh.get("/repos/example-org/shop-api");
+  assert.equal("Authorization" in headers[0]!, false);
+});
+
+test("CLI --repo end to end against the local mock API", async () => {
+  const port = String(20000 + Math.floor(Math.random() * 20000));
+  const mock = spawn(process.execPath, [`${REPO_ROOT}scripts/mock-github.mjs`, `${FIXTURES}org/example-org.json`, port]);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      mock.stdout.on("data", (d: Buffer) => d.toString().includes("mock GitHub API") && resolve());
+      mock.on("exit", () => reject(new Error("mock server exited")));
+    });
+    const cli = fileURLToPath(new URL("../src/cli.js", import.meta.url));
+    const out = await new Promise<{ code: number | null; out: string }>((resolve) => {
+      const p = spawn(process.execPath, [cli, "--repo", "example-org/legacy-billing", "--offline", "--fixes", `${FIXTURES}fixes.pending.json`, "--json"], {
+        env: { ...process.env, GITHUB_API_URL: `http://127.0.0.1:${port}`, GH_TOKEN: "test-token", NO_COLOR: "1" },
+      });
+      let o = "";
+      p.stdout.on("data", (d: Buffer) => (o += d));
+      p.on("close", (code) => resolve({ code, out: o }));
+    });
+    assert.equal(out.code, 1);
+    const j = JSON.parse(out.out) as { repo: { name: string; branch: string }; counts: Record<string, number> };
+    assert.deepEqual(j.repo, { name: "example-org/legacy-billing", branch: "master" });
+    assert.deepEqual(j.counts, { actionRequired: 1, checkManually: 1, declaredFixed: 0 });
+  } finally {
+    mock.kill();
+  }
+});

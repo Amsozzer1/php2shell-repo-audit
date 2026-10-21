@@ -19,6 +19,7 @@ export interface Report {
   skipped: string[];
   findings: Finding[];
   runtimeCheck: string;
+  repo?: { name: string; branch: string }; // set for --repo
 }
 
 export function buildReport(version: string, s: ScanResult, fx: LoadedFixes): Report {
@@ -85,6 +86,7 @@ export function renderText(r: Report, color: boolean): string {
   const c = paint(color);
   const out: string[] = [];
   out.push(`${r.tool} ${r.version}  ·  ${tableLine(r)}`);
+  if (r.repo) out.push(`repo ${r.repo.name} (${r.repo.branch}), read through the GitHub API`);
   out.push("Reads PHP versions declared in this repo. It does not check running servers.");
   for (const w of r.warnings) out.push(c("33", `warning: ${w}`));
   if (r.findings.length === 0) {
@@ -122,6 +124,7 @@ export function renderTextCompact(r: Report, color: boolean, width: number): str
   const add = (line: string) => out.push(...wrap(line, width));
   const t = r.fixTable;
   add(`${r.tool} ${r.version}`);
+  if (r.repo) add(`repo ${r.repo.name} (${r.repo.branch})`);
   add(`fix table rev ${t.revision}: ${t.status === "pending" ? "pending" : `published${t.publishedAt ? " " + t.publishedAt : ""}`} (${t.origin})`);
   add("Reads repo files. Doesn't check servers.");
   for (const w of r.warnings) add(`warning: ${w}`);
@@ -153,6 +156,7 @@ export function renderJson(r: Report): string {
       schemaVersion: JSON_SCHEMA_VERSION,
       tool: r.tool,
       version: r.version,
+      ...(r.repo ? { repo: r.repo } : {}),
       fixTable: r.fixTable,
       warnings: r.warnings,
       counts: { actionRequired: r.counts.action, checkManually: r.counts.manual, declaredFixed: r.counts.fixed },
@@ -181,6 +185,7 @@ export function findingJson(f: Finding) {
     branch: f.branch,
     message: f.message,
     fix: FIX_GUIDE[f.reason],
+    ...(f.upstream ? { upstream: f.upstream } : {}),
   };
 }
 

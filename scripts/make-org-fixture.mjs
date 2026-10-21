@@ -67,6 +67,8 @@ routes[`/orgs/example-org/repos?${q}`] = {
 routes[`/orgs/example-org/repos?${q}&page=2`] = { status: 200, headers: rate(4989), body: page2 };
 routes[`/users/example-user/repos?${q}`] = { status: 200, headers: rate(4988), body: [repoJson("example-user/side-project", repos["example-user/side-project"])] };
 
+for (const [name, r] of Object.entries(repos)) routes[`/repos/${name}`] = { status: 200, headers: rate(4987), body: repoJson(name, r) };
+
 let n = 0;
 for (const [name, r] of Object.entries(repos)) {
   if (r.empty) {
