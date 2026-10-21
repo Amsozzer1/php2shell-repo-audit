@@ -1,0 +1,56 @@
+name: publish
+
+# A pushed tag v* publishes that version as `latest`.
+# A manual run publishes a release candidate (version must contain -rc.) as `next`.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      rc_version:
+        description: "Release candidate version, e.g. 0.1.0-rc.0"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npm test
+      - name: Pick version and dist-tag
+        id: ver
+        env:
+          EVENT: ${{ github.event_name }}
+          RC_VERSION: ${{ inputs.rc_version }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            case "$RC_VERSION" in *-rc.*) ;; *) echo "::error::rc_version must contain -rc."; exit 1;; esac
+            npm version --no-git-tag-version "$RC_VERSION"
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            v="$(node -p 'require("./package.json").version')"
+            if [ "$GITHUB_REF_NAME" != "v$v" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match package.json version $v"; exit 1
+            fi
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance --access public --tag "$DIST_TAG"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ steps.ver.outputs.tag }}
+      - run: npm dist-tag ls php2shell-repo-audit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

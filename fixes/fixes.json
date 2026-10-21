@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "cves": ["CVE-2026-109618", "CVE-2026-109619"],
+  "status": "pending",
+  "publishedAt": null,
+  "source": "https://www.php.net/archive/2026.php",
+  "verifiedAgainst": "https://www.php.net/releases/?json&version=<branch>",
+  "branches": {
+    "8.5": { "fixed": null },
+    "8.4": { "fixed": null },
+    "8.3": { "fixed": null },
+    "8.2": { "fixed": null }
+  },
+  "eol": ["5", "7", "8.0", "8.1"]
+}

@@ -6,10 +6,10 @@ A small, real project built to show how I'd approach a specific problem. It will
 Planning docs live in `.private/` (gitignored): `PRD.md` is the spec to build, `company.md` has context and the words to avoid. Read both before starting. Never copy anything from `.private/` into tracked files.
 
 ## Commands
-- Build: `[command]`
-- Test: `[command]`
-- Run the demo: `[command]`
-- Measure / regenerate results: `[command]`
+- Build: `npm ci && npm run build`
+- Test: `npm test`
+- Run the demo: `node dist/src/cli.js examples/demo-repo`
+- Measure / regenerate results: `node scripts/measure.mjs`
 
 ## How to work
 - Build milestone by milestone from `.private/PRD.md`. Don't skip acceptance checks.
@@ -29,7 +29,7 @@ These override any default attribution behavior of the coding tool.
 
 ## Hard rules
 - **Never name the target company, its product, or anything implying knowledge of its internals** in code, comments, README, commit messages, file names or sample data. The full list is in `.private/forbidden.txt`; the `pre-commit` hook blocks commits that contain any of it.
-- **No employer or client names** (listed in .private/forbidden.txt).
+- **No employer or client names.** The list is in `.private/forbidden.txt`.
 - **Every number in the README comes from a measurement in this repo**, with the script that produced it committed and the raw output in `results/`. Record in `results/numbers.md` whether each number is a single run or an aggregate, and how many runs.
 - **No placeholders in anything public:** no "TBD", "to run", empty table rows. Fill it or delete it.
 - **Honest limits.** If something is simulated, synthetic or heuristic, the README says so.

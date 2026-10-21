@@ -8,14 +8,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node: [20, 22]
     steps:
       - uses: actions/checkout@v4
-      # Replace with the project's toolchain setup, build and test commands.
-      # TEMPLATE.md only exists in the template repo (setup.sh deletes it), so the
-      # template itself passes and a new project fails until it sets real commands.
-      - run: |
-          if [ -f TEMPLATE.md ]; then echo "template repo, nothing to build"; exit 0; fi
-          echo "set build and test commands"; exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
 
   leak-check:
     runs-on: ubuntu-24.04

@@ -1,0 +1,48 @@
+{
+  "name": "php2shell-repo-audit",
+  "version": "0.1.0",
+  "description": "Lists the PHP versions your repos declare and sorts them by what needs the php2shell fix (CVE-2026-109618, CVE-2026-109619). CLI and GitHub Action.",
+  "type": "module",
+  "bin": {
+    "php2shell-repo-audit": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src",
+    "fixes/fixes.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc",
+    "test": "tsc && node --test dist/test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "php2shell",
+    "CVE-2026-109618",
+    "CVE-2026-109619",
+    "php",
+    "docker",
+    "github-action",
+    "inventory",
+    "php-fpm",
+    "setup-php"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amsozzer1/php2shell-repo-audit.git"
+  },
+  "homepage": "https://github.com/Amsozzer1/php2shell-repo-audit#readme",
+  "bugs": {
+    "url": "https://github.com/Amsozzer1/php2shell-repo-audit/issues"
+  },
+  "author": "Ahmed M. Sozzer (https://amsozzer.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
+  }
+}
