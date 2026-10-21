@@ -9,7 +9,8 @@ Planning docs live in `.private/` (gitignored): `PRD.md` is the spec to build, `
 - Build: `npm ci && npm run build`
 - Test: `npm test`
 - Run the demo: `node dist/src/cli.js examples/demo-repo`
-- Measure / regenerate results: `node scripts/measure.mjs`
+- Measure / regenerate results: `./scripts/fetch-corpus.sh && node scripts/measure.mjs --fixes fixes/fixes.json`
+- Release (after filling `fixes/fixes.json` from php.net): `scripts/release.sh <version>` (rehearse with `--dry-run`)
 
 ## How to work
 - Build milestone by milestone from `.private/PRD.md`. Don't skip acceptance checks.
