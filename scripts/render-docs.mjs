@@ -6,7 +6,9 @@
 //   --check          fail if "pending" or "has not published" wording is left outside the sample blocks,
 //                    or llms.txt says anything is safe
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { FIX_GUIDE } from "../dist/src/fixes-guide.js";
 
 const args = process.argv.slice(2);
@@ -24,9 +26,34 @@ const fixedOf = (b) => {
 const fixedList = branches.map((b) => `${b}: ${fixedOf(b)}`).join(", ");
 const npx = published ? `npx php2shell-repo-audit@${pkg.version}` : "npx php2shell-repo-audit";
 
+// Docs for features newer than package.json's version stay out until release.sh bumps it.
+const atLeast = (v) => {
+  const [a, b] = [pkg.version, v].map((s) => s.split("-")[0].split(".").map(Number));
+  for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i];
+  return true;
+};
+const has011 = atLeast("0.1.1");
+
+// The samples show what the published package prints. Once package.json's version is tagged, main
+// can carry unreleased code, so the samples come from a build of that tag. At release time the tag
+// doesn't exist yet, and the current build is the release.
+const sampleCli = (() => {
+  const tag = `v${pkg.version}`;
+  try {
+    execFileSync("git", ["rev-parse", "-q", "--verify", `refs/tags/${tag}`], { stdio: "ignore" });
+  } catch {
+    return { path: "dist/src/cli.js", cleanup: () => {} };
+  }
+  const dir = mkdtempSync(join(tmpdir(), "php2shell-docs-"));
+  execFileSync("sh", ["-c", `git archive "${tag}" | tar -x -C "${dir}"`]);
+  symlinkSync(resolve("node_modules"), join(dir, "node_modules"));
+  execFileSync(process.execPath, [resolve("node_modules/typescript/bin/tsc"), "-p", dir]);
+  return { path: join(dir, "dist/src/cli.js"), cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+})();
+
 function cli(extra) {
   try {
-    return execFileSync("node", ["dist/src/cli.js", "examples/demo-repo", "--offline", ...extra], {
+    return execFileSync("node", [sampleCli.path, "examples/demo-repo", "--offline", ...extra], {
       encoding: "utf8",
       env: { ...process.env, NO_COLOR: "1" },
     });
@@ -54,6 +81,27 @@ const blocks = {
     ? ""
     : "0.1.0 is published after php.net's advisory at 14:00 UTC. Until then, `npx php2shell-repo-audit` runs the release candidate, whose fix table has no fixed versions yet, so nothing is marked fixed.",
 
+  "repo-and-upstream": has011
+    ? [
+        "To scan one GitHub repo without cloning it:",
+        "",
+        "```sh",
+        `${npx} --repo laravel/laravel`,
+        `${npx} --repo your-org/your-app --json`,
+        "```",
+        "",
+        "It reads the default branch the same way as `--org`. A token is optional for public repos; without one, GitHub allows 60 API requests an hour.",
+        "",
+        "For floating official tags such as `php:8.3-fpm`, `--check-upstream` asks Docker Hub whether the tag has been rebuilt with the fixed version yet:",
+        "",
+        "```sh",
+        `${npx} path/to/repo --check-upstream`,
+        "```",
+        "",
+        "It reads the tag's current digest and the `PHP_VERSION` its linux/amd64 image sets, and the message says \"upstream rebuilt with 8.3.x, rebuild and redeploy now\" or \"not rebuilt yet, check again later\". The finding stays in CHECK MANUALLY either way, because your own image is old until you rebuild it. Docker Hub rate limits anonymous requests, so lookups are cached per run and a failure falls back to the normal message.",
+      ].join("\n")
+    : "",
+
   "how-it-works": [
     "- Walks the repo (skipping `node_modules`, `vendor`, `.git` and files over 1 MB) and reads Dockerfiles and Containerfiles, YAML files (compose, Kubernetes, GitHub Actions, GitLab CI, Forgejo), `.php-version`, `.tool-versions` and `composer.json`. YAML is read line by line, without a YAML library.",
     "- Each declaration gets a kind (official `php` image, digest, ARG default, image that bundles PHP, distro package, Sail runtime, setup-php, version file, composer) and a context (prod, ci, dev).",
@@ -62,7 +110,11 @@ const blocks = {
       : "- A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.",
     "- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.",
     "- A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add \"not affected\", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.",
-    `- Context changes the message, never the bucket. php.net's [advisory](${published ? advisory : "https://www.php.net/archive/2026.php"}) puts the risk on installations that serve web requests (PHP-FPM and mod_php highest, then php-cgi, FrankenPHP and LiteSpeed), so CI and dev findings add "lower exposure than a web-serving runtime; still update" and stay in the same bucket.`,
+    ...(has011
+      ? [
+          `- Context changes the message, never the bucket. php.net's [advisory](${published ? advisory : "https://www.php.net/archive/2026.php"}) puts the risk on installations that serve web requests (PHP-FPM and mod_php highest, then php-cgi, FrankenPHP and LiteSpeed), so CI and dev findings add "lower exposure than a web-serving runtime; still update" and stay in the same bucket.`,
+        ]
+      : []),
   ].join("\n"),
 
   "fixed-versions": published
@@ -103,7 +155,7 @@ const blocks = {
       "|---|---|",
       "| `schemaVersion` | Shape version of this output, currently 1 |",
       "| `tool`, `version` | Tool name and version |",
-      "| `repo` | With `--repo`: `name` and the `branch` that was read |",
+      ...(has011 ? ["| `repo` | With `--repo`: `name` and the `branch` that was read |"] : []),
       "| `fixTable` | The fix table used: `origin` (remote, bundled or file), `revision`, `status` (pending or published), `publishedAt`, `source` (php.net advisory URL) |",
       "| `warnings` | Problems loading the remote fix table, if any |",
       "| `counts` | `actionRequired`, `checkManually`, `declaredFixed` |",
@@ -122,10 +174,14 @@ const blocks = {
       "| `findings[].branch` | PHP branch, e.g. `8.3`, or null |",
       "| `findings[].message` | Why it landed in this bucket |",
       "| `findings[].fix` | What to do about it |",
-      "| `findings[].upstream` | With `--check-upstream`, on floating official tags: `image`, `digest`, `phpVersion` (what Docker Hub's tag has now) and `rebuilt` (true, false, or null if the table has no fix for that branch) |",
+      ...(has011
+        ? ["| `findings[].upstream` | With `--check-upstream`, on floating official tags: `image`, `digest`, `phpVersion` (what Docker Hub's tag has now) and `rebuilt` (true, false, or null if the table has no fix for that branch) |"]
+        : []),
     ].join("\n");
   })(),
 };
+
+sampleCli.cleanup();
 
 if (args.includes("--with-verdicts")) {
   const v = JSON.parse(readFileSync("results/firm-verdicts.json", "utf8"));
@@ -181,9 +237,9 @@ const llms = [
   "## Commands",
   `- One repo: \`${npx} path/to/repo\``,
   `- A GitHub org or user account (read-only): \`${npx} --org your-org\``,
-  `- One GitHub repo without cloning (token optional for public repos): \`${npx} --repo owner/name\``,
+  ...(has011 ? [`- One GitHub repo without cloning (token optional for public repos): \`${npx} --repo owner/name\``] : []),
   `- Summary for an incident channel: \`${npx} --org your-org --markdown\``,
-  `- Has Docker Hub rebuilt a floating php tag yet: \`${npx} path/to/repo --check-upstream\``,
+  ...(has011 ? [`- Has Docker Hub rebuilt a floating php tag yet: \`${npx} path/to/repo --check-upstream\``] : []),
   `- JSON (schemaVersion 1, a \`fix\` string on every finding): \`${npx} path/to/repo --json\``,
   ...(published ? [`- GitHub Action: \`uses: Amsozzer1/php2shell-repo-audit@v${pkg.version}\``] : []),
   "",

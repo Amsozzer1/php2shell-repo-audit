@@ -52,22 +52,8 @@ npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # shor
 - Archived repos and forks are skipped (`--include-forks` includes forks).
 - It reads the rate-limit headers, waits for the reset when few requests are left or a limit is hit, and prints progress to stderr. For GitHub Enterprise, set `GITHUB_API_URL`.
 
-To scan one GitHub repo without cloning it:
-
-```sh
-npx php2shell-repo-audit@0.1.0 --repo laravel/laravel
-npx php2shell-repo-audit@0.1.0 --repo your-org/your-app --json
-```
-
-It reads the default branch the same way as `--org`. A token is optional for public repos; without one, GitHub allows 60 API requests an hour.
-
-For floating official tags such as `php:8.3-fpm`, `--check-upstream` asks Docker Hub whether the tag has been rebuilt with the fixed version yet:
-
-```sh
-npx php2shell-repo-audit@0.1.0 path/to/repo --check-upstream
-```
-
-It reads the tag's current digest and the `PHP_VERSION` its linux/amd64 image sets, and the message says "upstream rebuilt with 8.3.x, rebuild and redeploy now" or "not rebuilt yet, check again later". The finding stays in CHECK MANUALLY either way, because your own image is old until you rebuild it. Docker Hub rate limits anonymous requests, so lookups are cached per run and a failure falls back to the normal message.
+<!-- repo-and-upstream:start -->
+<!-- repo-and-upstream:end -->
 
 As a GitHub Action:
 
@@ -94,12 +80,12 @@ php2shell-repo-audit 0.1.0  ·  fix table rev 2: published 2026-10-21, https://w
 Reads PHP versions declared in this repo. It does not check running servers.
 
 ACTION REQUIRED (3)
-  .tool-versions:2             dev   php 8.4.20                  vulnerable: fixed in 8.4.27, upgrade (dev-only, lower exposure than a web-serving runtime; still update)
+  .tool-versions:2             dev   php 8.4.20                  vulnerable: fixed in 8.4.27, upgrade
   docker/api/Dockerfile:1      prod  FROM php:8.3.30-fpm         vulnerable: fixed in 8.3.36, upgrade
   docker/legacy/Dockerfile:1   prod  FROM php:8.1-fpm            eol: no official php.net release for 8.1; upgrade, use your vendor's backport, or build from php.net's backport branch PHP-8.1-CVE-2026-109618-109619
 
 CHECK MANUALLY (4)
-  .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build (CI-only CLI, lower exposure than a web-serving runtime; still update)
+  .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build
   Dockerfile:1                 prod  FROM php:8.3-fpm            floating-rebuild: rebuild with --pull and redeploy after the release, then confirm with the docker run check
   composer.json:6              prod  "php": "^8.2"               constraint-only: a composer constraint is not the runtime
   docker/worker/Dockerfile:3   prod  apt-get install php8.2-cli  distro-vendor: vendors backport fixes without changing the version; check your vendor's security tracker
@@ -113,7 +99,7 @@ exit 1: action required
 
 ## Results
 
-Measured on 10 public PHP repos pinned to commit SHAs on 21 Oct 2026 (`results/corpus.json`), against declarations I labeled by hand (`results/labels.json`) before running the tool on each repo. Labels are line level with no versions; no per-repo verdicts are published. Recall is measured over the file types the labeling grep covers: Dockerfiles, Containerfiles, YAML, `.php-version`, `.tool-versions` and `composer.json`.
+Measured on 10 public PHP repos pinned to commit SHAs on 21 Oct 2026 (`results/corpus.json`), against labeled declarations (`results/labels.json`). The labels were made by reading each repo's files line by line before running the tool on it, with an AI coding assistant, in one labeling pass. Labels are line level with no versions; no per-repo verdicts are published. Recall is measured over the file types the labeling grep covers: Dockerfiles, Containerfiles, YAML, `.php-version`, `.tool-versions` and `composer.json`.
 
 | Set | Approach | Declarations found | False positives |
 |---|---|---|---|
@@ -147,7 +133,6 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 - A fix table from php.net (`fixes/fixes.json`, rev 2, from the [advisory](https://www.php.net/archive/2026.php#2026-10-21-5) of 2026-10-21) decides the bucket: 8.5: 8.5.12, 8.4: 8.4.27, 8.3: 8.3.36, 8.2: 8.2.35. On a branch with no fixed version in the table, exact pins stay in CHECK MANUALLY.
 - The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
 - A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add "not affected", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.
-- Context changes the message, never the bucket. php.net's [advisory](https://www.php.net/archive/2026.php#2026-10-21-5) puts the risk on installations that serve web requests (PHP-FPM and mod_php highest, then php-cgi, FrankenPHP and LiteSpeed), so CI and dev findings add "lower exposure than a web-serving runtime; still update" and stay in the same bucket.
 <!-- how-it-works:end -->
 
 | Bucket | Reason codes |
@@ -240,7 +225,7 @@ php2shell-repo-audit ships a GitHub Action: add `uses: Amsozzer1/php2shell-repo-
 
 ### How is this different from grep or host-side php2shell checkers?
 
-Host-side checkers inspect servers, SSH hosts and pulled images; php2shell-repo-audit reads the repo before deploy and needs no server access. On 4 held-out public repos with 42 declarations I labeled by hand, the tool found 36 and `grep -rnE "FROM +php:"` found 16. That is a small set, labeled by one person, and recall only covers the file types the labels covered; the 6 misses were fixed after that single run. The tool also sorts what it finds: 111 of the 112 declarations labeled across all 10 corpus repos can't prove which PHP build runs, so most land in CHECK MANUALLY with a reason. Method and runs: [`results/numbers.md`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/numbers.md).
+Host-side checkers inspect servers, SSH hosts and pulled images; php2shell-repo-audit reads the repo before deploy and needs no server access. On 4 held-out public repos with 42 labeled declarations, the tool found 36 and `grep -rnE "FROM +php:"` found 16. That is a small set from one labeling pass, made with an AI coding assistant before the tool was run, and recall only covers the file types the labels covered; the 6 misses were fixed after that single run. The tool also sorts what it finds: 111 of the 112 declarations labeled across all 10 corpus repos can't prove which PHP build runs, so most land in CHECK MANUALLY with a reason. Method and runs: [`results/numbers.md`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/numbers.md).
 
 ### What output formats does it support?
 
@@ -299,7 +284,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "declared": "setup-php 8.3",
       "version": "8.3",
       "branch": "8.3",
-      "message": "setup-php installs the current or pre-installed 8.3 patch, not a pinned build (CI-only CLI, lower exposure than a web-serving runtime; still update)",
+      "message": "setup-php installs the current or pre-installed 8.3 patch, not a pinned build",
       "fix": "After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`."
     },
     {
@@ -312,7 +297,7 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
       "declared": "php 8.4.20",
       "version": "8.4.20",
       "branch": "8.4",
-      "message": "fixed in 8.4.27, upgrade (dev-only, lower exposure than a web-serving runtime; still update)",
+      "message": "fixed in 8.4.27, upgrade",
       "fix": "Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy."
     }
   ]
@@ -323,7 +308,6 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
 |---|---|
 | `schemaVersion` | Shape version of this output, currently 1 |
 | `tool`, `version` | Tool name and version |
-| `repo` | With `--repo`: `name` and the `branch` that was read |
 | `fixTable` | The fix table used: `origin` (remote, bundled or file), `revision`, `status` (pending or published), `publishedAt`, `source` (php.net advisory URL) |
 | `warnings` | Problems loading the remote fix table, if any |
 | `counts` | `actionRequired`, `checkManually`, `declaredFixed` |
@@ -342,7 +326,6 @@ Real output for `examples/demo-repo` with the fix table in this repo (`--offline
 | `findings[].branch` | PHP branch, e.g. `8.3`, or null |
 | `findings[].message` | Why it landed in this bucket |
 | `findings[].fix` | What to do about it |
-| `findings[].upstream` | With `--check-upstream`, on floating official tags: `image`, `digest`, `phpVersion` (what Docker Hub's tag has now) and `rebuilt` (true, false, or null if the table has no fix for that branch) |
 <!-- json:end -->
 
 ## Build and test from a clean clone
@@ -372,7 +355,7 @@ The corpus repos are cloned, not committed. Their licenses are listed in `result
 
 - It reads declarations, not runtimes. DECLARED ≥ FIXED always means "runtime not verified".
 - YAML and Dockerfiles are read with line-based rules, not full parsers. Anchors, `extends:`, `include:` and values computed at run time are not followed, and come out as `unresolved` or not at all.
-- The corpus is 10 repos, labeled by one person (me). The held-out set is 4 repos and 42 labels, which is small.
+- The corpus is 10 repos with one labeling pass: the labels were made by reading each repo's files line by line before running the tool on it, with an AI coding assistant. The held-out set is 4 repos and 42 labels, which is small.
 - Context (prod, ci, dev) is a guess from the file path. A compose file used only on laptops is still marked prod.
 - `--org` reads default branches only, and only the files the GitHub trees API lists. For very large repos the API truncates that list; the repo is then reported as not fully read. Requests are sequential, so a large org takes a while.
 - The demo repo is synthetic. The test fix tables in `test/fixtures/` are hypothetical (X.Y.97 to X.Y.99) and exist only for tests.
