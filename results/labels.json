@@ -1,0 +1,109 @@
+{
+  "note": "Hand labels of PHP version declarations in the corpus repos, made by reading candidate lines before the tool was run on the corpus. No versions and no verdicts.",
+  "labeledOn": "2026-10-21",
+  "candidates": "git grep -niE 'php|sail/runtimes' -- '*Dockerfile*' '*Containerfile*' '*.yml' '*.yaml' '*.php-version' '*.tool-versions' '*composer.json' ':!vendor' ':!node_modules'",
+  "rules": [
+    "A declaration is a line that states which PHP a project runs, builds or tests with: a container image that is or bundles PHP, a package install of PHP, a setup-php version input (including env values and reusable-workflow inputs that feed it), .php-version / .tool-versions, or composer require.php / config.platform.php.",
+    "Matrix values are labeled on the line where the value is written; lines that only reference ${{ matrix.x }} are not labeled; matrix exclude entries are not declarations.",
+    "Package installs are labeled once per RUN instruction and PHP branch, on the line of the first PHP package.",
+    "Make variables, .env values and comments are not labeled. Lines outside the candidate grep (for example an image name with no 'php' in it) are not labeled, so recall is measured over these file types and this grep only."
+  ],
+  "types": [
+    "php-image:exact",
+    "php-image:floating",
+    "php-image:digest",
+    "php-image:arg",
+    "third-party-image",
+    "ci-image:exact",
+    "ci-image:floating",
+    "version-file:exact",
+    "version-file:minor",
+    "setup-php",
+    "distro",
+    "sail",
+    "composer"
+  ],
+  "repos": {
+    "pestphp/pestphp.com": [
+      ".github/workflows/tests.yml:15:setup-php",
+      "composer.json:11:composer",
+      "composer.json:38:composer",
+      "docker-compose.yml:6:sail"
+    ],
+    "monicahq/monica": [
+      ".github/workflows/release.yml:16:setup-php",
+      ".github/workflows/static_analysis.yml:16:setup-php",
+      ".github/workflows/tests.yml:26:setup-php",
+      ".github/workflows/tests.yml:28:setup-php",
+      ".tool-versions:1:version-file:exact",
+      "composer.json:13:composer",
+      "scripts/docker/Dockerfile:21:php-image:floating",
+      "scripts/docker/Dockerfile-fpm:21:php-image:floating"
+    ],
+    "docker-library/wordpress": [
+      "Dockerfile.template:5:php-image:arg",
+      "beta/php8.2/apache/Dockerfile:7:php-image:floating",
+      "beta/php8.2/fpm-alpine/Dockerfile:7:php-image:floating",
+      "beta/php8.2/fpm/Dockerfile:7:php-image:floating",
+      "beta/php8.3/apache/Dockerfile:7:php-image:floating",
+      "beta/php8.3/fpm-alpine/Dockerfile:7:php-image:floating",
+      "beta/php8.3/fpm/Dockerfile:7:php-image:floating",
+      "beta/php8.4/apache/Dockerfile:7:php-image:floating",
+      "beta/php8.4/fpm-alpine/Dockerfile:7:php-image:floating",
+      "beta/php8.4/fpm/Dockerfile:7:php-image:floating",
+      "beta/php8.5/apache/Dockerfile:7:php-image:floating",
+      "beta/php8.5/fpm-alpine/Dockerfile:7:php-image:floating",
+      "beta/php8.5/fpm/Dockerfile:7:php-image:floating",
+      "cli/php8.2/alpine/Dockerfile:7:php-image:floating",
+      "cli/php8.3/alpine/Dockerfile:7:php-image:floating",
+      "cli/php8.4/alpine/Dockerfile:7:php-image:floating",
+      "cli/php8.5/alpine/Dockerfile:7:php-image:floating",
+      "latest/php8.2/apache/Dockerfile:7:php-image:floating",
+      "latest/php8.2/fpm-alpine/Dockerfile:7:php-image:floating",
+      "latest/php8.2/fpm/Dockerfile:7:php-image:floating",
+      "latest/php8.3/apache/Dockerfile:7:php-image:floating",
+      "latest/php8.3/fpm-alpine/Dockerfile:7:php-image:floating",
+      "latest/php8.3/fpm/Dockerfile:7:php-image:floating",
+      "latest/php8.4/apache/Dockerfile:7:php-image:floating",
+      "latest/php8.4/fpm-alpine/Dockerfile:7:php-image:floating",
+      "latest/php8.4/fpm/Dockerfile:7:php-image:floating",
+      "latest/php8.5/apache/Dockerfile:7:php-image:floating",
+      "latest/php8.5/fpm-alpine/Dockerfile:7:php-image:floating",
+      "latest/php8.5/fpm/Dockerfile:7:php-image:floating"
+    ],
+    "symfony/demo": [
+      ".github/workflows/end_to_end_tests.yaml:25:setup-php",
+      ".github/workflows/end_to_end_tests.yaml:78:setup-php",
+      ".github/workflows/end_to_end_tests.yaml:119:setup-php",
+      ".github/workflows/lint.yaml:33:setup-php",
+      ".github/workflows/lint.yaml:94:setup-php",
+      ".github/workflows/tests.yaml:24:setup-php",
+      ".github/workflows/tests.yaml:27:setup-php",
+      ".github/workflows/tests.yaml:29:setup-php",
+      "composer.json:9:composer",
+      "composer.json:81:composer"
+    ],
+    "laravel/sail": [
+      ".github/workflows/tests.yml:20:setup-php",
+      "composer.json:17:composer",
+      "runtimes/8.0/Dockerfile:35:distro",
+      "runtimes/8.0/Dockerfile:81:distro",
+      "runtimes/8.1/Dockerfile:35:distro",
+      "runtimes/8.1/Dockerfile:81:distro",
+      "runtimes/8.2/Dockerfile:35:distro",
+      "runtimes/8.2/Dockerfile:80:distro",
+      "runtimes/8.3/Dockerfile:35:distro",
+      "runtimes/8.3/Dockerfile:80:distro",
+      "runtimes/8.4/Dockerfile:35:distro",
+      "runtimes/8.4/Dockerfile:80:distro",
+      "runtimes/8.5/Dockerfile:35:distro",
+      "runtimes/8.5/Dockerfile:80:distro"
+    ],
+    "wodby/docker4drupal": [
+      "compose.yml:17:third-party-image",
+      "compose.yml:61:third-party-image",
+      "tests/10/compose.yml:11:third-party-image",
+      "tests/11/compose.yml:11:third-party-image"
+    ]
+  }
+}

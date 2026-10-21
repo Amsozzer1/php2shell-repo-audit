@@ -1,0 +1,12 @@
+{
+  "note": "Public repos used to measure recall. Pinned to commit SHAs. Cloned into .corpus/ by scripts/fetch-corpus.sh, never committed. Only declaration labels (no versions) and counts are committed; no per-repo verdicts.",
+  "pinnedOn": "2026-10-21",
+  "repos": [
+    { "name": "pestphp/pestphp.com", "sha": "7d1efe7e10e3948e29add93e8175e9855e703a0d", "license": "none stated", "why": "Laravel app with Sail" },
+    { "name": "monicahq/monica", "sha": "6e6ec217457e946e330ba7cd3b28107f4332c7b1", "license": "AGPL-3.0", "why": "Laravel app with .tool-versions, Docker and CI" },
+    { "name": "docker-library/wordpress", "sha": "2d7faab7fb71508e6854cdbed948c195957f279e", "license": "GPL-2.0", "why": "WordPress Docker images built on php" },
+    { "name": "symfony/demo", "sha": "8d2e2ef75c3e18df173d8bf2379a14abb58c4c31", "license": "MIT", "why": "Symfony app with a setup-php matrix" },
+    { "name": "laravel/sail", "sha": "56c1c94117ef12ee707d50433273228ebee7138e", "license": "MIT", "why": "Runtimes that apt-get install php from the ondrej PPA" },
+    { "name": "wodby/docker4drupal", "sha": "4a674614cc312d15970bceea21d2644edff7f06c", "license": "MIT", "why": "Drupal compose stack with third-party PHP images" }
+  ]
+}
