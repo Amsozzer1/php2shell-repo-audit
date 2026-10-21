@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "cves": ["CVE-2026-109618", "CVE-2026-109619"],
+  "status": "published",
+  "publishedAt": "hypothetical",
+  "source": "HYPOTHETICAL test fixture. X.Y.97 is below the synthetic X.Y.98 declarations in the tests.",
+  "verifiedAgainst": "test fixture",
+  "branches": {
+    "8.5": { "fixed": "8.5.97" },
+    "8.4": { "fixed": "8.4.97" },
+    "8.3": { "fixed": "8.3.97" },
+    "8.2": { "fixed": "8.2.97" }
+  },
+  "eol": ["5", "7", "8.0", "8.1"]
+}
