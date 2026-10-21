@@ -2,6 +2,8 @@ name: publish
 
 # A pushed tag v* publishes that version as `latest`.
 # A manual run publishes a release candidate (version must contain -rc.) as `next`.
+# Auth is npm trusted publishing (OIDC from this workflow), so there is no npm token secret;
+# provenance is attached automatically. Needs npm 11.5.1+, which ships with Node 24.
 on:
   push:
     tags: ["v*"]
@@ -22,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm ci
       - run: npm test
@@ -44,13 +46,8 @@ jobs:
             fi
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
-      - run: npm whoami
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm --version
       - run: npm publish --provenance --access public --tag "$DIST_TAG"
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           DIST_TAG: ${{ steps.ver.outputs.tag }}
-      - run: npm dist-tag ls php2shell-repo-audit
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm view php2shell-repo-audit dist-tags
