@@ -1,5 +1,5 @@
 {
-  "note": "Hand labels of PHP version declarations, made by reading candidate lines before the tool was run on that repo. No versions and no verdicts. The tuning set was labeled first; the held-out set was labeled after the detector fixes and measured once.",
+  "note": "Labels of PHP version declarations, made by reading each repo's files line by line with an AI coding assistant, in one labeling pass, before the tool was run on that repo. No versions and no verdicts. The tuning set was labeled first; the held-out set was labeled after the detector fixes and measured once.",
   "labeledOn": "2026-10-21",
   "candidates": "git grep -niE 'php|sail/runtimes' -- '*Dockerfile*' '*Containerfile*' '*.yml' '*.yaml' '*.php-version' '*.tool-versions' '*composer.json' ':!vendor' ':!node_modules'",
   "rules": [

@@ -40,6 +40,6 @@ It reads files in git, and with \`--org\` the GitHub REST API (read-only). It do
 
 ## Measured
 
-On 4 held-out public repos with 42 declarations labeled by hand, the tool found 36 and \`grep -rnE "FROM +php:"\` found 16. That is a small set, labeled by one person, and recall only covers the file types the labels covered. Method: [results/numbers.md](https://github.com/Amsozzer1/php2shell-repo-audit/blob/v${version}/results/numbers.md).
+On 4 held-out public repos with 42 labeled declarations, the tool found 36 and \`grep -rnE "FROM +php:"\` found 16. That is a small set from one labeling pass, made with an AI coding assistant before the tool was run, and recall only covers the file types the labels covered. Method: [results/numbers.md](https://github.com/Amsozzer1/php2shell-repo-audit/blob/v${version}/results/numbers.md).
 
 npm: [php2shell-repo-audit@${version}](https://www.npmjs.com/package/php2shell-repo-audit/v/${version}), published from the release workflow with provenance.`);

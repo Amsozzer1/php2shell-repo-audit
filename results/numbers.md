@@ -1,6 +1,6 @@
 # Numbers
 
-Every number that appears in the README, and where it comes from. All measurements are deterministic (no randomness), single run each, on 10 public repos pinned to commit SHAs in `results/corpus.json`, labeled by hand in `results/labels.json`. The scripts always run offline with an explicit fix table.
+Every number that appears in the README, and where it comes from. All measurements are deterministic (no randomness), single run each, on 10 public repos pinned to commit SHAs in `results/corpus.json`, labeled in `results/labels.json`. The labels were made by reading each repo's files line by line before running the tool on it, with an AI coding assistant, in one labeling pass. The scripts always run offline with an explicit fix table.
 
 | Number | What it measures | Single run or aggregate | Runs | Produced by | Raw output |
 |---|---|---|---|---|---|

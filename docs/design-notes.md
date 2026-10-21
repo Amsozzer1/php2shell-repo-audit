@@ -17,7 +17,7 @@ Why each decision was made, what was tried and dropped, and what the numbers cha
 **Because:** a typo or a bad push on `main` would otherwise change every user's verdicts at once. Every fixed version must also be above the builds that shipped before the fix (8.2.34, 8.3.35, 8.4.26, 8.5.11).
 
 ## 4. The first corpus run failed in useful ways
-**Chose:** label the corpus by hand from a grep over config files, commit the labels, then run the tool.
+**Chose:** label the corpus from a grep over config files, reading each repo's files line by line with an AI coding assistant in one labeling pass, commit the labels, then run the tool.
 **What happened:** the first run found 58 of 69 labeled declarations with 3 false positives. The misses and false positives:
 - `Dockerfile-fpm` didn't match the Dockerfile name pattern.
 - setup-php versions set in `env:` and read with `${{ env.php-version }}` came out as unresolved.
@@ -26,7 +26,7 @@ Why each decision was made, what was tried and dropped, and what the numbers cha
 - Laravel Sail's `apt-get install $(for ext ...; do echo "php8.0-$ext"; done)` was split at the `;` inside `$( )`, so the package was lost.
 - One label was missing: the labeling grep for one repo didn't include `sail/runtimes` yet. It was added and recorded as a correction.
 
-After fixing them, the same repos went to 70 of 70. Since that is tuned on the same repos, I labeled 4 more repos and measured them once: 36 of 42, 1 false positive, against grep's 16 of 42. The held-out misses were setup-php referenced by full URL (`uses: https://github.com/shivammathur/setup-php@v2`, common on Forgejo), Debian's `libapache2-mod-php`, and an Arch `pacman -S` install. Those are fixed in the release, and the README reports the held-out number from before the fixes.
+After fixing them, the same repos went to 70 of 70. Since that is tuned on the same repos, 4 more repos were labeled the same way and measured once: 36 of 42, 1 false positive, against grep's 16 of 42. The held-out misses were setup-php referenced by full URL (`uses: https://github.com/shivammathur/setup-php@v2`, common on Forgejo), Debian's `libapache2-mod-php`, and an Arch `pacman -S` install. Those are fixed in the release, and the README reports the held-out number from before the fixes.
 
 ## 5. Unverifiable firm verdicts instead of false "fixed"
 **Chose:** compare against a naive version check by counting firm verdicts ("vulnerable" or "fixed") on sources that can't prove the runtime, EOL excluded and reported separately.
