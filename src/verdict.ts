@@ -67,7 +67,6 @@ export function classify(d: Declaration, table: FixTable): Finding {
     if (floats) return f(d, "manual", "floating-rebuild", null, floatingMessage(d, null));
     return f(d, "manual", "unknown-branch", null, `version "${raw}" is not a PHP release this tool knows`);
   }
-  if (v.pre) return f(d, "manual", "unknown-branch", branch, `${v.raw} is a pre-release; check it manually`);
   if (isEol(v, table.eol))
     return f(d, "action", "eol", branch, `${branch ?? v.major + ".x"} gets no upstream fixes, upgrade to a supported branch`);
   if (v.minor === null) {
@@ -75,7 +74,9 @@ export function classify(d: Declaration, table: FixTable): Finding {
     return f(d, "manual", "unknown-branch", null, `${v.raw} is not a branch in the fix table`);
   }
   const entry = table.branches[branch!];
-  if (!entry) return f(d, "manual", "unknown-branch", branch, `${branch} is not a branch in the fix table`);
+  // A pre-release (8.6.0RC3, 8.6-rc) is only judged when its branch is in the table.
+  if (!entry)
+    return f(d, "manual", "unknown-branch", branch, v.pre ? `${v.raw} is a pre-release on a branch with no entry in the fix table; check it manually` : `${branch} is not a branch in the fix table`);
 
   const exact = (d.kind === "official-image" || d.kind === "tool-versions") && v.patch !== null;
   if (!exact) return f(d, "manual", "floating-rebuild", branch, floatingMessage(d, branch));

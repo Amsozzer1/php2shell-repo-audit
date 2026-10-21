@@ -15,7 +15,7 @@ export const FIX_GUIDE: Record<Reason, string> = {
   digest: "Run `" + RUNTIME_CHECK_CMD + "` on the pinned digest. If it's below the fix, move to a rebuilt image and update the digest.",
   "constraint-only": "Nothing to change for the runtime. A composer constraint doesn't choose the PHP that runs; check the other findings or the running image.",
   unresolved: "Find where the variable or matrix value is set (CI, compose, .env) and check that version by hand.",
-  "unknown-branch": "Check this version by hand against php.net's advisory. It is a pre-release or a branch that isn't in the fix table.",
+  "unknown-branch": "Check this version by hand against php.net's advisory. It is a dev build, or a version (or pre-release) on a branch with no entry in the fix table.",
   "declared-fixed": "Nothing to change in what the repo declares. Confirm the deployed runtime with `" + RUNTIME_CHECK_CMD + "`.",
   "not-affected": "Nothing to change in what the repo declares. Confirm the deployed runtime with `" + RUNTIME_CHECK_CMD + "`.",
 };

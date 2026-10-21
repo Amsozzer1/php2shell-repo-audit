@@ -66,7 +66,7 @@ const rejected: Array<[string, unknown, string]> = [
   ["wrong shape", { hello: "world" }, "rejected"],
   ["fixed below the floor", withBranch(table("hypothetical"), "8.3", { fixed: "8.3.3" }), "floor"],
   ["fixed on the wrong branch", withBranch(table("hypothetical"), "8.3", { fixed: "8.4.99" }), "not an X.Y.Z release on this branch"],
-  ["unknown branch", withBranch(table("hypothetical"), "8.6", { fixed: "8.6.1" }), "unknown branch"],
+  ["unknown branch", withBranch(table("hypothetical"), "8.7", { fixed: "8.7.1" }), "unknown branch"],
   ["affected false with a fixed version", withBranch(table("hypothetical"), "8.2", { fixed: "8.2.99", affected: false }), "cannot have a fixed"],
   ["published with all null", { ...table("pending"), status: "published" }, "no fixed version"],
   ["pending with a fixed version", { ...table("hypothetical"), status: "pending" }, "status pending"],

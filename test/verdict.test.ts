@@ -42,7 +42,7 @@ test("exact while the branch fix is still null: CHECK MANUALLY pending-fix", () 
 });
 
 test("unknown branches, pre-releases and dev builds: CHECK MANUALLY unknown-branch", () => {
-  for (const v of ["8.6.0", "9.0.1", "8.5.0RC1", "nightly", "master"]) {
+  for (const v of ["8.6.0", "9.0.1", "8.6.0RC3", "nightly", "master"]) {
     assert.deepEqual(check(decl("official-image", v)), ["manual", "unknown-branch"], v);
   }
   assert.deepEqual(check(decl("setup-php", "nightly")), ["manual", "unknown-branch"]);

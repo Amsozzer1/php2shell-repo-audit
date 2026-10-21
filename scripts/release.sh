@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 # Release once fixes/fixes.json has been filled from the php.net advisory
 # (status "published", revision bumped, "source" set to the advisory URL).
-# Usage: scripts/release.sh <version> [--dry-run] [--allow-json-lag]
-#   --dry-run         do everything except commit, tag, push and the GitHub Release (for rehearsals)
-#   --allow-json-lag  passed to check-fixes.mjs; only with the advisory URL in the commit message
+# Usage: scripts/release.sh <version> [--dry-run] [--allow-json-lag] [--confirm-rc <version>]...
+#   --dry-run               do everything except commit, tag, push and the GitHub Release (for rehearsals)
+#   --allow-json-lag        passed to check-fixes.mjs; only with the advisory URL in the commit message
+#   --confirm-rc <version>  passed to check-fixes.mjs: accept a fixed RC php.net's RC page doesn't list yet
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-version="${1:?usage: scripts/release.sh <version> [--dry-run] [--allow-json-lag]}"
-dry=0; lag=()
-for a in "${@:2}"; do
-  case "$a" in
+version="${1:?usage: scripts/release.sh <version> [--dry-run] [--allow-json-lag] [--confirm-rc <version>]}"
+shift
+dry=0; check=()
+while [ $# -gt 0 ]; do
+  case "$1" in
     --dry-run) dry=1 ;;
-    --allow-json-lag) lag=(--allow-json-lag) ;;
-    *) echo "unknown option $a" >&2; exit 2 ;;
+    --allow-json-lag) check+=(--allow-json-lag) ;;
+    --confirm-rc) check+=(--confirm-rc "${2:?--confirm-rc needs a version}"); shift ;;
+    *) echo "unknown option $1" >&2; exit 2 ;;
   esac
+  shift
 done
 
 grep -q '"status": "published"' fixes/fixes.json || { echo "FAIL: fix table is not published" >&2; exit 1; }
@@ -24,7 +28,7 @@ npm ci --silent
 npm test --silent >/dev/null
 
 echo "== check the fix table against php.net"
-node scripts/check-fixes.mjs fixes/fixes.json ${lag[@]+"${lag[@]}"}
+node scripts/check-fixes.mjs fixes/fixes.json ${check[@]+"${check[@]}"}
 
 echo "== bump version to $version"
 npm version --no-git-tag-version --allow-same-version "$version" >/dev/null

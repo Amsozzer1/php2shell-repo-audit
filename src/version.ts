@@ -24,9 +24,19 @@ export function branchOf(v: PhpVersion): string | null {
   return v.minor === null ? null : `${v.major}.${v.minor}`;
 }
 
-// Compares two exact versions (patch required on both). Negative if a < b.
+// Pre-release order: dev < alpha < beta < RC < final release; then the number (RC3 < RC4).
+function preRank(pre: string | null): [number, number] {
+  if (pre === null) return [4, 0];
+  const m = /^(DEV|ALPHA|BETA|RC)(\d*)$/.exec(pre);
+  const kind = m ? { DEV: 0, ALPHA: 1, BETA: 2, RC: 3 }[m[1] as "DEV" | "ALPHA" | "BETA" | "RC"] : 0;
+  return [kind, m && m[2] ? Number(m[2]) : 0];
+}
+
+// Compares two exact versions (patch required on both), including pre-releases. Negative if a < b.
 export function compareExact(a: PhpVersion, b: PhpVersion): number {
-  return a.major - b.major || (a.minor ?? 0) - (b.minor ?? 0) || (a.patch ?? 0) - (b.patch ?? 0);
+  const [ak, an] = preRank(a.pre);
+  const [bk, bn] = preRank(b.pre);
+  return a.major - b.major || (a.minor ?? 0) - (b.minor ?? 0) || (a.patch ?? 0) - (b.patch ?? 0) || ak - bk || an - bn;
 }
 
 // EOL entries are either a major ("5", "7") or a branch ("8.0", "8.1").

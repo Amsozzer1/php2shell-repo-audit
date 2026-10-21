@@ -8,13 +8,19 @@ export const REMOTE_URL =
   "https://raw.githubusercontent.com/Amsozzer1/php2shell-repo-audit/main/fixes/fixes.json";
 export const BUNDLED_PATH = new URL("../../fixes/fixes.json", import.meta.url);
 
-// Latest builds before the fix release (php.net, 24 Sep 2026). Any "fixed" value must be above these.
+// Latest builds before the fix release (php.net releases of 24 Sep 2026; 8.6.0RC3 from the
+// release-candidates page, 8 Oct 2026). Any "fixed" value must be above these. 8.6 has no final
+// release yet, so it can't be in the table until the advisory names a fixed 8.6 build.
 export const FLOORS: Record<string, string> = {
   "8.2": "8.2.34",
   "8.3": "8.3.35",
   "8.4": "8.4.26",
   "8.5": "8.5.11",
+  "8.6": "8.6.0RC3",
 };
+
+// A branch whose floor is a pre-release has no final release yet, so its fix may be an RC.
+export const allowsPreRelease = (branch: string) => parseVersion(FLOORS[branch] ?? "")?.pre != null;
 
 export type TableOrigin = "remote" | "bundled" | "file";
 
@@ -56,8 +62,8 @@ export function validateTable(x: unknown): string[] {
       continue;
     }
     const v = parseVersion(e.fixed);
-    if (!v || v.patch === null || v.pre !== null || `${v.major}.${v.minor}` !== branch) {
-      errs.push(`${branch}: fixed ${e.fixed} is not an X.Y.Z release on this branch`);
+    if (!v || v.patch === null || `${v.major}.${v.minor}` !== branch || (v.pre !== null && (!allowsPreRelease(branch) || !/^RC\d+$/.test(v.pre)))) {
+      errs.push(`${branch}: fixed ${e.fixed} is not an X.Y.Z release${allowsPreRelease(branch) ? " or X.Y.ZRCn" : ""} on this branch`);
       continue;
     }
     if (compareExact(v, parseVersion(FLOORS[branch]!)!) <= 0)
