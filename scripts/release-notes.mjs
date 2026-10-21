@@ -1,7 +1,7 @@
 // Prints the GitHub Release notes for a version, from fixes/fixes.json and the committed results.
 // Usage: node scripts/release-notes.mjs <version>
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const version = process.argv[2];
 if (!version) throw new Error("usage: node scripts/release-notes.mjs <version>");
@@ -11,8 +11,11 @@ const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).tri
 const branches = Object.keys(t.branches).sort((a, b) => Number(b.split(".")[1]) - Number(a.split(".")[1]));
 const row = (b) => `| ${b} | ${t.branches[b].fixed ?? (t.branches[b].affected === false ? "not affected" : "no fixed version named")} |`;
 
-console.log(`php2shell-repo-audit ${version} lists the PHP versions your repos declare and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619, using the fixed versions from [php.net's advisory](${t.source}).
+const changesFile = `docs/changes/${version}.md`;
+const changes = existsSync(changesFile) ? `\n## What's new\n\n${readFileSync(changesFile, "utf8").trim()}\n` : "";
 
+console.log(`php2shell-repo-audit ${version} lists the PHP versions your repos declare and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619, using the fixed versions from [php.net's advisory](${t.source}).
+${changes}
 ## Fix table in this release (rev ${t.revision}, ${t.publishedAt})
 
 | Branch | Fixed in |
