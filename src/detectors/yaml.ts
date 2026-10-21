@@ -31,10 +31,18 @@ function matrixValues(lines: string[], key: string): Array<{ value: string; line
   for (let i = 0; i < lines.length; i++) {
     if (!/^\s*matrix:\s*$/.test(lines[i]!) && !/^\s*matrix:\s*#/.test(lines[i]!)) continue;
     const base = indentOf(lines[i]!);
+    let excludeIndent = -1;
     for (let j = i + 1; j < lines.length; j++) {
       const l = lines[j]!;
       if (l.trim() === "" || isComment(l)) continue;
       if (indentOf(l) <= base) break;
+      // Entries under `exclude:` remove combinations; they don't declare versions.
+      if (excludeIndent >= 0 && indentOf(l) > excludeIndent) continue;
+      excludeIndent = -1;
+      if (/^\s*exclude:\s*(#.*)?$/.test(l)) {
+        excludeIndent = indentOf(l);
+        continue;
+      }
       const km = new RegExp(`^\\s*(?:-\\s*)?["']?${key}["']?:\\s*(.*)$`).exec(l);
       if (!km) continue;
       const v = km[1]!.trim();
@@ -80,21 +88,73 @@ function setupPhp(file: string, lines: string[]): Declaration[] {
     }
     for (let j = start; j < end; j++) {
       const pv = /^\s*php-version:\s*(.+)$/.exec(lines[j]!);
-      if (!pv) continue;
-      const raw = stripYamlValue(pv[1]!);
-      const mx = /^\$\{\{\s*matrix\.([\w-]+)\s*\}\}$/.exec(raw);
-      if (mx) {
-        const vals = matrixValues(lines, mx[1]!);
-        if (!vals) {
-          out.push({ file, line: j + 1, text: `setup-php ${raw}`, kind: "unresolved", context: "ci", version: null });
-          continue;
-        }
-        for (const v of vals) out.push({ file, line: v.line, text: `setup-php ${v.value}`, kind: "setup-php", context: "ci", version: v.value });
-      } else if (/\$\{\{/.test(raw)) {
-        out.push({ file, line: j + 1, text: `setup-php ${raw}`, kind: "unresolved", context: "ci", version: null });
-      } else {
-        out.push({ file, line: j + 1, text: `setup-php ${raw}`, kind: "setup-php", context: "ci", version: raw });
+      if (pv) out.push(...versionInput(file, lines, j, stripYamlValue(pv[1]!), "setup-php"));
+    }
+  }
+  return out;
+}
+
+// `env:` values in the same file, for ${{ env.X }}.
+function envValue(lines: string[], key: string): { value: string; line: number } | null {
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*env:\s*(#.*)?$/.test(lines[i]!)) continue;
+    const base = indentOf(lines[i]!);
+    for (let j = i + 1; j < lines.length; j++) {
+      const l = lines[j]!;
+      if (l.trim() === "" || isComment(l)) continue;
+      if (indentOf(l) <= base) break;
+      const m = /^\s*([\w.-]+):\s*(.+)$/.exec(l);
+      if (m && m[1] === key) return { value: stripYamlValue(m[2]!), line: j + 1 };
+    }
+  }
+  return null;
+}
+
+// A PHP version input (setup-php php-version, or a reusable workflow's php-version(s) input).
+// Matrix and env references are resolved in the same file; anything else is unresolved.
+function versionInput(file: string, lines: string[], j: number, raw: string, label: string): Declaration[] {
+  const decl = (line: number, value: string): Declaration => ({ file, line, text: `${label} ${value}`, kind: "setup-php", context: "ci", version: value });
+  const unresolved: Declaration = { file, line: j + 1, text: `${label} ${raw}`, kind: "unresolved", context: "ci", version: null };
+  const mx = /^\$\{\{\s*matrix\.([\w-]+)\s*\}\}$/.exec(raw);
+  if (mx) {
+    const vals = matrixValues(lines, mx[1]!);
+    return vals ? vals.map((v) => decl(v.line, v.value)) : [unresolved];
+  }
+  const ev = /^\$\{\{\s*env\.([\w-]+)\s*\}\}$/.exec(raw);
+  if (ev) {
+    const v = envValue(lines, ev[1]!);
+    return v && !/\$\{\{/.test(v.value) ? [decl(v.line, v.value)] : [unresolved];
+  }
+  if (/\$\{\{/.test(raw)) return [unresolved];
+  // A JSON-style list passed as a string: "['8.3', '8.4']"
+  if (raw.trim().startsWith("[")) {
+    const items = raw.replace(/[[\]]/g, "").split(",").map((x) => stripYamlValue(x)).filter(Boolean);
+    return items.map((v) => decl(j + 1, v));
+  }
+  return [decl(j + 1, raw)];
+}
+
+// Jobs that call a reusable workflow and pass it PHP versions: `with: php-version: 8.3`.
+function reusableInputs(file: string, lines: string[]): Declaration[] {
+  const out: Declaration[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*uses:\s*["']?[\w.-]+\/[\w.-]+\/\.github\/workflows\/[^@\s]+@/.test(lines[i]!)) continue;
+    const base = indentOf(lines[i]!);
+    let start = i;
+    while (start > 0 && indentOf(lines[start - 1]!) >= base && lines[start - 1]!.trim() !== "") start--;
+    for (let j = start; j < lines.length; j++) {
+      const l = lines[j]!;
+      if (l.trim() === "" || isComment(l)) continue;
+      if (j > i && indentOf(l) < base) break;
+      if (indentOf(l) !== base || !/^\s*with:\s*(#.*)?$/.test(l)) continue;
+      for (let k = j + 1; k < lines.length; k++) {
+        const lk = lines[k]!;
+        if (lk.trim() === "" || isComment(lk)) continue;
+        if (indentOf(lk) <= base) break;
+        const m = /^\s*([\w-]*php[\w-]*versions?):\s*(.+)$/i.exec(lk);
+        if (m) out.push(...versionInput(file, lines, k, stripYamlValue(m[2]!), m[1]!));
       }
+      break;
     }
   }
   return out;
@@ -138,6 +198,6 @@ export function detectYaml(file: string, content: string): Declaration[] {
     const d = imageDeclaration(value, {}, { file, line, context, prefix: `${m[1]}: ` });
     if (d) out.push(d);
   }
-  out.push(...setupPhp(file, lines));
+  out.push(...setupPhp(file, lines), ...reusableInputs(file, lines));
   return out;
 }

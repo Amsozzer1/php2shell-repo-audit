@@ -1,0 +1,24 @@
+{
+  "measuredWith": {
+    "fixes": "test/fixtures/fixes.hypothetical.json",
+    "tableStatus": "published",
+    "node": "v24.21.0",
+    "date": "2026-10-21"
+  },
+  "definition": "Unverifiable firm verdicts: among tool findings that match a label, are version-dependent, are not on an EOL branch, and come from a source that can't prove the runtime (M), the number where a check commits to vulnerable or fixed (N). Branches whose fixed version is null are left out.",
+  "unverifiableFirmVerdicts": {
+    "M": 51,
+    "tool": 0,
+    "naive": 51,
+    "leftOutNullBranch": 0
+  },
+  "eolFindings": {
+    "findings": 4,
+    "toolActionRequired": 0,
+    "naiveFirm": 4
+  },
+  "cantProveRuntime": {
+    "unprovable": 68,
+    "labeled": 69
+  }
+}

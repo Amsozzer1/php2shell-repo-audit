@@ -128,3 +128,36 @@ test("demo repo: all 7 planted declarations with the expected buckets", () => {
     "docker/worker/Dockerfile:3 distro prod manual/distro-vendor",
   ]);
 });
+
+test("Dockerfile-* names, and PHP packages built by a subshell", () => {
+  assert.ok(isDockerfile("scripts/docker/Dockerfile-fpm"));
+  const ds = detectDockerfile(
+    "Dockerfile",
+    'FROM ubuntu:24.04\nRUN if [ -n "$PHP_EXTENSIONS" ]; then \\\n    apt-get install -y $(for ext in $PHP_EXTENSIONS; do echo "php8.4-$ext"; done) \\\n    ; fi\n',
+  );
+  assert.deepEqual(brief(ds), [[3, "distro", "8.4"]]);
+});
+
+test("setup-php matrix: exclude entries are not declarations", () => {
+  const ds = detectYaml(
+    ".github/workflows/ci.yml",
+    "jobs:\n  t:\n    strategy:\n      matrix:\n        php: [8.2, 8.3]\n        laravel: [12, 13]\n        exclude:\n          - php: 8.2\n            laravel: 13\n    steps:\n      - uses: shivammathur/setup-php@v2\n        with:\n          php-version: ${{ matrix.php }}\n",
+  );
+  assert.deepEqual(brief(ds), [[5, "setup-php", "8.2"], [5, "setup-php", "8.3"]]);
+});
+
+test("setup-php reading ${{ env.X }} reports the env value line", () => {
+  const ds = detectYaml(
+    ".github/workflows/release.yml",
+    "env:\n  php-version: '8.3'\njobs:\n  r:\n    steps:\n      - uses: shivammathur/setup-php@v2\n        with:\n          php-version: ${{ env.php-version }}\n",
+  );
+  assert.deepEqual(brief(ds), [[2, "setup-php", "8.3"]]);
+});
+
+test("PHP version inputs passed to a reusable workflow", () => {
+  const ds = detectYaml(
+    ".github/workflows/tests.yml",
+    "jobs:\n  tests:\n    uses: org/workflows/.github/workflows/laravel.yml@v2\n    with:\n      php-versions: \"['8.3', '8.4']\"\n      connections: \"['sqlite']\"\n      default-php-version: '8.3'\n",
+  );
+  assert.deepEqual(brief(ds), [[5, "setup-php", "8.3"], [5, "setup-php", "8.4"], [7, "setup-php", "8.3"]]);
+});

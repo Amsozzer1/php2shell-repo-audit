@@ -1,0 +1,109 @@
+{
+  "measuredWith": {
+    "fixes": "test/fixtures/fixes.hypothetical.json",
+    "tableStatus": "published",
+    "node": "v24.21.0",
+    "date": "2026-10-21"
+  },
+  "candidates": "git grep -niE 'php|sail/runtimes' -- '*Dockerfile*' '*Containerfile*' '*.yml' '*.yaml' '*.php-version' '*.tool-versions' '*composer.json' ':!vendor' ':!node_modules'",
+  "totals": {
+    "labeled": 69,
+    "toolFound": 58,
+    "toolFP": 3,
+    "grepFound": 31,
+    "grepFP": 0,
+    "unprovableLabeled": 68
+  },
+  "byType": {
+    "setup-php": {
+      "labeled": 14,
+      "tool": 10,
+      "grep": 0
+    },
+    "composer": {
+      "labeled": 6,
+      "tool": 6,
+      "grep": 0
+    },
+    "sail": {
+      "labeled": 1,
+      "tool": 1,
+      "grep": 0
+    },
+    "version-file:exact": {
+      "labeled": 1,
+      "tool": 1,
+      "grep": 0
+    },
+    "php-image:floating": {
+      "labeled": 30,
+      "tool": 29,
+      "grep": 30
+    },
+    "php-image:arg": {
+      "labeled": 1,
+      "tool": 1,
+      "grep": 1
+    },
+    "distro": {
+      "labeled": 12,
+      "tool": 6,
+      "grep": 0
+    },
+    "third-party-image": {
+      "labeled": 4,
+      "tool": 4,
+      "grep": 0
+    }
+  },
+  "perRepo": [
+    {
+      "repo": "pestphp/pestphp.com",
+      "labeled": 4,
+      "toolFound": 4,
+      "toolFP": 0,
+      "grepFound": 0,
+      "grepFP": 0
+    },
+    {
+      "repo": "monicahq/monica",
+      "labeled": 8,
+      "toolFound": 3,
+      "toolFP": 2,
+      "grepFound": 2,
+      "grepFP": 0
+    },
+    {
+      "repo": "docker-library/wordpress",
+      "labeled": 29,
+      "toolFound": 29,
+      "toolFP": 0,
+      "grepFound": 29,
+      "grepFP": 0
+    },
+    {
+      "repo": "symfony/demo",
+      "labeled": 10,
+      "toolFound": 10,
+      "toolFP": 0,
+      "grepFound": 0,
+      "grepFP": 0
+    },
+    {
+      "repo": "laravel/sail",
+      "labeled": 14,
+      "toolFound": 8,
+      "toolFP": 1,
+      "grepFound": 0,
+      "grepFP": 0
+    },
+    {
+      "repo": "wodby/docker4drupal",
+      "labeled": 4,
+      "toolFound": 4,
+      "toolFP": 0,
+      "grepFound": 0,
+      "grepFP": 0
+    }
+  ]
+}

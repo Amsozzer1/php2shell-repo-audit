@@ -6,7 +6,7 @@ import { imageDeclaration } from "./common.js";
 export function isDockerfile(rel: string): boolean {
   const name = (rel.split("/").pop() ?? "").toLowerCase();
   return (
-    name === "dockerfile" || name.startsWith("dockerfile.") || name.endsWith(".dockerfile") ||
+    (/^dockerfile([.\-_][\w.-]*)?$/.test(name) && !/\.(md|txt|rst|adoc|html|json|ya?ml|sh|ps1)$/.test(name)) || name.endsWith(".dockerfile") ||
     name === "containerfile" || name.startsWith("containerfile.") || name.endsWith(".containerfile")
   );
 }
@@ -50,16 +50,38 @@ function parseArgs(rest: string, into: Record<string, string | undefined>) {
 const INSTALL = /\b(?:apt-get|apt|aptitude)\s+(?:\S+\s+)*?install\b|\bapk\s+(?:\S+\s+)*?add\b|\b(?:dnf|yum|microdnf)\s+(?:\S+\s+)*?install\b/;
 const PHP_PKG = /^php(?:(\d)\.?(\d{1,2}))?(?:$|[-=])/i;
 
+// Splits a shell command on && || ; | but not inside $( ), so a package list built by a
+// subshell (for ext in ...; do echo "php8.3-$ext"; done) stays with its install command.
+function segments(run: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (let i = 0; i < run.length; i++) {
+    const ch = run[i]!;
+    if (ch === "$" && run[i + 1] === "(") depth++;
+    else if (ch === ")" && depth > 0) depth--;
+    if (depth === 0 && (ch === ";" || ch === "|" || (ch === "&" && run[i + 1] === "&"))) {
+      out.push(cur);
+      cur = "";
+      if (run[i + 1] === ch) i++;
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
 // Packages per command segment, so "apt-get install curl && apk add php83" is read correctly.
 function phpPackages(run: string): Array<{ pkg: string; branch: string | null }> {
   const found: Array<{ pkg: string; branch: string | null }> = [];
-  for (const seg of run.split(/&&|\|\||;|\|/)) {
+  for (const seg of segments(run)) {
     const m = INSTALL.exec(seg);
     if (m) {
       const after = seg.slice(m.index + m[0].length).trim().split(/\s+/);
       for (const tok of after) {
         if (!tok || tok.startsWith("-")) continue;
-        const clean = tok.replace(/^["']|["']$/g, "");
+        const clean = tok.replace(/^\$?\(?["']?|["';)]+$/g, "");
         const p = PHP_PKG.exec(clean);
         if (p) found.push({ pkg: clean, branch: p[1] ? `${p[1]}.${p[2]}` : null });
       }
