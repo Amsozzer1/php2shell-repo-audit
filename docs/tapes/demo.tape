@@ -1,4 +1,5 @@
 # Renders docs/demo.gif. Run from the repo root after `npm ci`: vhs docs/tapes/demo.tape
+# The --org scene uses a made-up org served from recorded API fixtures by scripts/mock-github.mjs.
 Output docs/demo.gif
 
 Set Shell "bash"
@@ -10,7 +11,9 @@ Set TypingSpeed 35ms
 Set Theme "Builtin Dark"
 
 Hide
-Type "export PS1='$ ' NO_COLOR= && alias php2shell-repo-audit='node dist/src/cli.js' && clear"
+Type "node scripts/mock-github.mjs test/fixtures/org/example-org.json 8765 >/dev/null 2>&1 & sleep 1"
+Enter
+Type "export PS1='$ ' GITHUB_API_URL=http://127.0.0.1:8765 GH_TOKEN=demo && alias php2shell-repo-audit='node dist/src/cli.js' && clear"
 Enter
 Show
 
@@ -23,4 +26,17 @@ Sleep 3s
 Type "php2shell-repo-audit examples/demo-repo"
 Sleep 300ms
 Enter
-Sleep 9s
+Sleep 8s
+
+Hide
+Type "clear"
+Enter
+Show
+Type "php2shell-repo-audit --org example-org --markdown"
+Sleep 300ms
+Enter
+Sleep 8s
+
+Hide
+Type "kill %1"
+Enter

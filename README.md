@@ -29,7 +29,19 @@ Compare what you see with the fixed versions in [php.net's advisory](https://www
 npx php2shell-repo-audit@0.1.0 path/to/repo
 ```
 
-Node 20 or newer. No runtime dependencies. The only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
+Node 20 or newer. No runtime dependencies. On a local repo the only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
+
+To inventory every repo in a GitHub organization or user account, read-only:
+
+```sh
+npx php2shell-repo-audit@0.1.0 --org your-org                         # buckets grouped by repo
+npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
+```
+
+- The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough.
+- It reads each repo's default branch: one git trees call per repo, then one call per file the detectors read. Nothing else is downloaded.
+- Archived repos and forks are skipped (`--include-forks` includes forks).
+- It reads the rate-limit headers, waits for the reset when few requests are left or a limit is hit, and prints progress to stderr. For GitHub Enterprise, set `GITHUB_API_URL`.
 
 As a GitHub Action:
 
@@ -45,7 +57,7 @@ It writes the findings to the job summary.
 
 ![Terminal: grep finds 3 lines in the demo repo, then php2shell-repo-audit finds all 7 declarations and sorts them](docs/demo.gif)
 
-*The demo repo is synthetic (`examples/demo-repo/`). First `grep -rnE "FROM +php:"`, the usual "inventory your Dockerfiles" step, finds 3 lines. Then the tool finds all 7 declarations: three Dockerfiles, a Debian package install, a setup-php version in CI, `.tool-versions` and composer. It sorts them into ACTION REQUIRED, CHECK MANUALLY and DECLARED ≥ FIXED, with a reason for each.*
+*The demo repo is synthetic (`examples/demo-repo/`). First `grep -rnE "FROM +php:"`, the usual "inventory your Dockerfiles" step, finds 3 lines. Then the tool finds all 7 declarations: three Dockerfiles, a Debian package install, a setup-php version in CI, `.tool-versions` and composer. It sorts them into ACTION REQUIRED, CHECK MANUALLY and DECLARED ≥ FIXED, with a reason for each. The last scene runs `--org --markdown` on a made-up org (`example-org`), served from recorded API fixtures by `scripts/mock-github.mjs`.*
 
 Output on the demo repo:
 
@@ -126,7 +138,7 @@ Full numbers and how each was produced: [`results/numbers.md`](results/numbers.m
 | 4 | No PHP declarations found: the tool couldn't see your runtime |
 | 2 | Error |
 
-A composer constraint alone doesn't keep the check at 3 when the repo also declares a production runtime. The Action fails on 1, 3 and 4 by default; `fail-on: action` turns 3 into a pass, and 4 always fails. Flags: `--json`, `--summary` (Markdown), `--offline`, `--fixes <file>`. Set `NO_COLOR` to turn colour off.
+A composer constraint alone doesn't keep the check at 3 when the repo also declares a production runtime. With `--org`, repos that declare no PHP are listed and don't change the exit code; 4 means no repo declares PHP. The Action fails on 1, 3 and 4 by default; `fail-on: action` turns 3 into a pass, and 4 always fails. Flags: `--json`, `--summary` (Markdown), `--offline`, `--fixes <file>`. Set `NO_COLOR` to turn colour off.
 
 ## Build and test from a clean clone
 
@@ -157,6 +169,7 @@ The corpus repos are cloned, not committed. Their licenses are listed in `result
 - YAML and Dockerfiles are read with line-based rules, not full parsers. Anchors, `extends:`, `include:` and values computed at run time are not followed, and come out as `unresolved` or not at all.
 - The corpus is 10 repos, labeled by one person (me). The held-out set is 4 repos and 42 labels, which is small.
 - Context (prod, ci, dev) is a guess from the file path. A compose file used only on laptops is still marked prod.
+- `--org` reads default branches only, and only the files the GitHub trees API lists. For very large repos the API truncates that list; the repo is then reported as not fully read. Requests are sequential, so a large org takes a while.
 - The demo repo is synthetic. The test fix tables in `test/fixtures/` are hypothetical (X.Y.97 to X.Y.99) and exist only for tests.
 
 ## What I'd do next
@@ -164,7 +177,7 @@ The corpus repos are cloned, not committed. Their licenses are listed in `result
 - An `inspect <image>` command that runs `php` inside an image and checks for distro packages, so the real runtime can be checked in CI.
 - Detectors for Platform.sh, Upsun, DDEV, Vapor, Bref and App Engine config files.
 - SARIF output for the GitHub Security tab.
-- `--org <name>` to inventory every repo in a GitHub organization through the API.
+- Parallel requests for `--org`, within the rate limits.
 - An accept file for findings someone has already checked by hand.
 
 ## License

@@ -1,6 +1,6 @@
 // Output for --org: the same three buckets, grouped by repo, plus a Markdown summary for an incident channel.
 import type { LoadedFixes } from "./fixes.js";
-import type { OrgScan } from "./org.js";
+import { plural, type OrgScan } from "./org.js";
 import type { Bucket } from "./types.js";
 import { buildReport, findingJson, paint, renderBuckets, tableLine, type Report } from "./report.js";
 import { RUNTIME_CHECK } from "./verdict.js";
@@ -60,9 +60,9 @@ export function buildOrgReport(version: string, s: OrgScan, fx: LoadedFixes): Or
 function scope(r: OrgReport): string {
   const skipped = [];
   if (r.skippedRepos.archived.length) skipped.push(`${r.skippedRepos.archived.length} archived`);
-  if (r.skippedRepos.forks.length) skipped.push(`${r.skippedRepos.forks.length} forks`);
+  if (r.skippedRepos.forks.length) skipped.push(plural(r.skippedRepos.forks.length, "fork"));
   const n = r.repos.length + r.noDeclarations.length;
-  return `${n} repos scanned${skipped.length ? ` (skipped ${skipped.join(", ")})` : ""}, ${r.repos.length} declare PHP`;
+  return `${plural(n, "repo")} scanned${skipped.length ? ` (skipped ${skipped.join(", ")})` : ""}, ${r.repos.length} declare PHP`;
 }
 
 export function renderOrgText(r: OrgReport, color: boolean): string {

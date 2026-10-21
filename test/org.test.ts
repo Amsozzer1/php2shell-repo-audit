@@ -119,7 +119,7 @@ test("org text, JSON and Markdown outputs", async () => {
   const r = await report("pending");
   const text = renderOrgText(r, false);
   assert.match(text, /== example-org\/legacy-billing \(master\)/);
-  assert.match(text, /6 repos scanned \(skipped 1 archived, 1 forks\), 4 declare PHP/);
+  assert.match(text, /6 repos scanned \(skipped 1 archived, 1 fork\), 4 declare PHP/);
   assert.match(text, /No PHP declarations found in 2 repo\(s\)/);
   const md = renderOrgMarkdown(r);
   assert.match(md, /\*\*ACTION REQUIRED\*\*\n- `example-org\/legacy-billing` `docker\/Dockerfile:1` `FROM php:7\.4-apache`: eol/);

@@ -74,6 +74,8 @@ async function scanRepo(gh: GitHub, repo: ApiRepo): Promise<ScanResult> {
   return result;
 }
 
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 export async function scanOrg(
   gh: GitHub,
   org: string,
@@ -89,11 +91,11 @@ export async function scanOrg(
     else targets.push(r);
   }
   targets.sort((a, b) => (a.full_name < b.full_name ? -1 : 1));
-  log(`${org}: ${targets.length} repos to scan (skipped ${skippedRepos.archived.length} archived, ${skippedRepos.forks.length} forks)`);
+  log(`${org}: ${plural(targets.length, "repo")} to scan (skipped ${skippedRepos.archived.length} archived, ${plural(skippedRepos.forks.length, "fork")})`);
   const repos: RepoScan[] = [];
   for (const [i, r] of targets.entries()) {
     const scan = await scanRepo(gh, r);
-    log(`[${i + 1}/${targets.length}] ${r.full_name}: ${scan.filesRead} files read, ${scan.declarations.length} declarations`);
+    log(`[${i + 1}/${targets.length}] ${r.full_name}: ${plural(scan.filesRead, "file")} read, ${plural(scan.declarations.length, "declaration")}`);
     repos.push({ name: r.full_name, branch: r.default_branch, scan });
   }
   return { org, repos, skippedRepos, requests: gh.requests };
