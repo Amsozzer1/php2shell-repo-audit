@@ -78,7 +78,7 @@ php2shell-repo-audit 0.1.0  ·  fix table rev 1: pending, php.net has not publis
 Reads PHP versions declared in this repo. It does not check running servers.
 
 ACTION REQUIRED (1)
-  docker/legacy/Dockerfile:1   prod  FROM php:8.1-fpm            eol: 8.1 gets no upstream fixes, upgrade to a supported branch
+  docker/legacy/Dockerfile:1   prod  FROM php:8.1-fpm            eol: no official php.net release for 8.1; upgrade, use your vendor's backport, or build from php.net's backport branch PHP-8.1-CVE-2026-109618-109619
 
 CHECK MANUALLY (6)
   .github/workflows/ci.yml:10  ci    setup-php 8.3               floating-rebuild: setup-php installs the current or pre-installed 8.3 patch, not a pinned build
@@ -121,7 +121,7 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 - Walks the repo (skipping `node_modules`, `vendor`, `.git` and files over 1 MB) and reads Dockerfiles and Containerfiles, YAML files (compose, Kubernetes, GitHub Actions, GitLab CI, Forgejo), `.php-version`, `.tool-versions` and `composer.json`. YAML is read line by line, without a YAML library.
 - Each declaration gets a kind (official `php` image, digest, ARG default, image that bundles PHP, distro package, Sail runtime, setup-php, version file, composer) and a context (prod, ci, dev).
 - A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.
-- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because no fix will ship for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
+- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.
 - A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add "not affected", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.
 <!-- how-it-works:end -->
 
@@ -142,12 +142,12 @@ Full numbers and how each was produced: [`results/numbers.md`](https://github.co
 
 ## What to do for each finding
 
-The tool doesn't change anything. Each finding has a reason code; this is what to do about it. The same text is in `--json` as `fix` on every finding.
+The tool doesn't change anything. Each finding has a reason code; this is what to do about it. The same text is in `--json` as `fix` on every finding. If you can't update right now, php.net lists [mitigations in its advisory](https://www.php.net/archive/2026.php#2026-10-21-5) that reduce exposure but don't fix it.
 
 <!-- fix-guide:start -->
 | Reason | What to do |
 |---|---|
-| `eol` | Move to a supported PHP branch (8.2 or newer), rebuild and redeploy. 5.x, 7.x, 8.0 and 8.1 get no fixes from php.net. |
+| `eol` | php.net has no official release for this branch. Upgrade to a supported branch (8.2 or newer), use your distro's or LTS vendor's backport, or for 7.4, 8.0 and 8.1 build from php.net's source backport branch (`PHP-<branch>-CVE-2026-109618-109619` in php-src). Rebuild and redeploy. |
 | `vulnerable` | Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy. |
 | `floating-rebuild` | After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'`. |
 | `pending-fix` | php.net has no fixed version in the table for this branch yet. Re-run after the advisory; if the pin is below the fix, change it. |
@@ -179,7 +179,7 @@ No. It compares the PHP versions a repo declares with the fixed versions php.net
 ### Which PHP versions fix CVE-2026-109618 and CVE-2026-109619?
 
 <!-- fixed-versions:start -->
-php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is `pending` and nothing can be marked fixed. 5.x, 7.x, 8.0 and 8.1 are past end of life in php.net's support policy, so the tool marks them ACTION REQUIRED. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
+php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is `pending` and nothing can be marked fixed. 5.x, 7.x, 8.0 and 8.1 get no official php.net release, so the tool marks them ACTION REQUIRED. php.net published source backport branches for 7.4, 8.0 and 8.1, and some distros and LTS vendors backport; the message for each finding says which applies. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
 <!-- fixed-versions:end -->
 
 ### Is `php:8.3-fpm` fixed?

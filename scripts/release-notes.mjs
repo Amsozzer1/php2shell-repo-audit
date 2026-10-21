@@ -19,7 +19,7 @@ console.log(`php2shell-repo-audit ${version} lists the PHP versions your repos d
 |---|---|
 ${branches.map(row).join("\n")}
 
-5.x, 7.x, 8.0 and 8.1 are end of life and get ACTION REQUIRED. The table is filled by hand from the advisory and checked against php.net's per-branch release data (\`scripts/check-fixes.mjs\`).
+5.x, 7.x, 8.0 and 8.1 get no official php.net release and are ACTION REQUIRED; php.net published source backport branches for 7.4, 8.0 and 8.1, and some vendors backport. If you can't update right now, the advisory lists mitigations that reduce exposure but don't fix it. The table is filled by hand from the advisory and checked against php.net's per-branch release data (\`scripts/check-fixes.mjs\`).
 
 ## Run it
 

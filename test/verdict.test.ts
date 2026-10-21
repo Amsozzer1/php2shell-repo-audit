@@ -157,3 +157,14 @@ test("every reason code has a fix string", async () => {
   assert.deepEqual(Object.keys(FIX_GUIDE).sort(), [...REASONS].sort());
   for (const t of Object.values(FIX_GUIDE)) assert.doesNotMatch(t, /\bsafe\b|auto-?remediat/i);
 });
+
+test("EOL message: no official release; backport branch named only for 7.4, 8.0 and 8.1", async () => {
+  const { eolMessage } = await import("../src/verdict.js");
+  for (const b of ["7.4", "8.0", "8.1"]) {
+    const r = classify(decl("official-image", `${b}-fpm`.replace("-fpm", "")), hypo);
+    assert.equal(`${r.bucket}/${r.reason}`, "action/eol");
+    assert.equal(r.message, `no official php.net release for ${b}; upgrade, use your vendor's backport, or build from php.net's backport branch PHP-${b}-CVE-2026-109618-109619`);
+  }
+  for (const b of ["7.3", "5.6"]) assert.doesNotMatch(eolMessage(b), /backport branch/);
+  assert.equal(classify(decl("official-image", "5"), hypo).message, "no official php.net release for 5.x; upgrade, use your vendor's backport");
+});

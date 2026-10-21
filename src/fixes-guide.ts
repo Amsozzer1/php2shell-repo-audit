@@ -5,7 +5,7 @@ import type { Reason } from "./types.js";
 export const RUNTIME_CHECK_CMD = "docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'";
 
 export const FIX_GUIDE: Record<Reason, string> = {
-  eol: "Move to a supported PHP branch (8.2 or newer), rebuild and redeploy. 5.x, 7.x, 8.0 and 8.1 get no fixes from php.net.",
+  eol: "php.net has no official release for this branch. Upgrade to a supported branch (8.2 or newer), use your distro's or LTS vendor's backport, or for 7.4, 8.0 and 8.1 build from php.net's source backport branch (`PHP-<branch>-CVE-2026-109618-109619` in php-src). Rebuild and redeploy.",
   vulnerable: "Change the pin to the fixed version for this branch (named in the finding's message), rebuild and redeploy.",
   "pending-fix": "php.net has no fixed version in the table for this branch yet. Re-run after the advisory; if the pin is below the fix, change it.",
   "floating-rebuild": "After the release, rebuild with `docker build --pull .` and redeploy, or re-run the CI job for setup-php. Then confirm with `" + RUNTIME_CHECK_CMD + "`.",

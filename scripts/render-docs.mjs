@@ -39,7 +39,7 @@ const INTRO_REST =
   "The first question is which of your repos and images run a PHP that needs the fix. `grep \"FROM php:\"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files in one repo or a GitHub org. It does not check running servers.";
 
 const EOL_SENTENCE =
-  "5.x, 7.x, 8.0 and 8.1 are past end of life in php.net's support policy, so the tool marks them ACTION REQUIRED. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.";
+  "5.x, 7.x, 8.0 and 8.1 get no official php.net release, so the tool marks them ACTION REQUIRED. php.net published source backport branches for 7.4, 8.0 and 8.1, and some distros and LTS vendors backport; the message for each finding says which applies. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.";
 
 const blocks = {
   intro: published
@@ -60,7 +60,7 @@ const blocks = {
     published
       ? `- A fix table from php.net (\`fixes/fixes.json\`, rev ${table.revision}, from the [advisory](${advisory}) of ${date}) decides the bucket: ${fixedList}. On a branch with no fixed version in the table, exact pins stay in CHECK MANUALLY.`
       : "- A fix table from php.net (`fixes/fixes.json`) decides the bucket. php.net has not published fixed versions yet, so every branch is pending and nothing can be marked fixed.",
-    "- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because no fix will ship for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.",
+    "- The verdict rules only allow DECLARED ≥ FIXED for an exact version in an official image tag or `.tool-versions`. Everything that can't prove the runtime goes to CHECK MANUALLY with a reason. EOL branches (5.x, 7.x, 8.0, 8.1) are ACTION REQUIRED, because php.net ships no official release for them. The exceptions are distro and Sail installs and ARG defaults, which say end of life in the message but stay in CHECK MANUALLY, because a vendor may patch them or the build may override them.",
     "- A remote fix table is only used if it validates and can't weaken anything: it can't lower or remove a fixed version, can't add \"not affected\", can't have an older revision, and every fixed version must be newer than the builds that shipped before the fix.",
   ].join("\n"),
 
@@ -73,6 +73,8 @@ const blocks = {
         ...branches.map((b) => `| ${b} | ${fixedOf(b)} |`),
         "",
         `This tool reads them from [\`fixes/fixes.json\`](${REPO}/blob/main/fixes/fixes.json) (rev ${table.revision}), filled by hand from that advisory and checked against php.net's per-branch release data. ${EOL_SENTENCE}`,
+        "",
+        `If you can't update right now, php.net lists [mitigations in the advisory](${advisory}) that reduce exposure but don't fix it.`,
       ].join("\n")
     : `php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [\`fixes/fixes.json\`](${REPO}/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is \`pending\` and nothing can be marked fixed. ${EOL_SENTENCE}`,
 
@@ -131,7 +133,7 @@ if (args.includes("--with-verdicts")) {
     "| | This tool | Naive version compare |",
     "|---|---|---|",
     `| Unverifiable firm verdicts (version-dependent, not EOL, source can't prove the runtime) | ${u.tool} of ${u.M} (0 by design) | ${u.naive} of ${u.M} |`,
-    `| EOL findings (counted separately: no fix will ship, so the verdict is certain) | ${v.eolFindings.findings} found, ${v.eolFindings.toolActionRequired} ACTION REQUIRED (the rest are distro or Sail installs, kept in CHECK MANUALLY with an end-of-life note) | ${v.eolFindings.naiveFirm} firm |`,
+    `| EOL findings (counted separately: no official php.net release, so ACTION REQUIRED is certain) | ${v.eolFindings.findings} found, ${v.eolFindings.toolActionRequired} ACTION REQUIRED (the rest are distro or Sail installs, kept in CHECK MANUALLY with an end-of-life note) | ${v.eolFindings.naiveFirm} firm |`,
   ];
   if (u.leftOutNullBranch) lines.push("", `${u.leftOutNullBranch} findings on branches with no fixed version in the table are left out of the first row.`);
   blocks.verdicts = lines.join("\n");

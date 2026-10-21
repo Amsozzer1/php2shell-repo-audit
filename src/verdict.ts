@@ -35,6 +35,15 @@ function eolNote(v: PhpVersion | null, eol: string[]): string {
   return v && isEol(v, eol) ? ` (${branchOf(v) ?? v.major + ".x"} is end of life)` : "";
 }
 
+// php.net's 21 Oct 2026 advisory: no official release for 8.1 and older, but source backport branches
+// in php-src for 7.4, 8.0 and 8.1; some distros and LTS vendors backport too.
+export const BACKPORT_BRANCHES = new Set(["7.4", "8.0", "8.1"]);
+
+export function eolMessage(branch: string): string {
+  const build = BACKPORT_BRANCHES.has(branch) ? `, or build from php.net's backport branch PHP-${branch}-CVE-2026-109618-109619` : "";
+  return `no official php.net release for ${branch}; upgrade, use your vendor's backport${build}`;
+}
+
 export function classify(d: Declaration, table: FixTable): Finding {
   const v = d.version ? parseVersion(d.version.replace(/^[\^~>=<\s]+/, "")) : null;
   const branch = v ? branchOf(v) : null;
@@ -68,7 +77,7 @@ export function classify(d: Declaration, table: FixTable): Finding {
     return f(d, "manual", "unknown-branch", null, `version "${raw}" is not a PHP release this tool knows`);
   }
   if (isEol(v, table.eol))
-    return f(d, "action", "eol", branch, `${branch ?? v.major + ".x"} gets no upstream fixes, upgrade to a supported branch`);
+    return f(d, "action", "eol", branch, eolMessage(branch ?? `${v.major}.x`));
   if (v.minor === null) {
     if (v.major === 8) return f(d, "manual", "floating-rebuild", null, floatingMessage(d, null));
     return f(d, "manual", "unknown-branch", null, `${v.raw} is not a branch in the fix table`);
