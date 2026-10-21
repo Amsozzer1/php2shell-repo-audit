@@ -7,8 +7,17 @@ import { OLD_BASE_OS } from "./images.js";
 export const RUNTIME_CHECK = "docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'";
 const CHECK = "the docker run check";
 
+// php.net's advisory puts the risk on installations that serve web requests (PHP-FPM and mod_php
+// highest, then php-cgi, FrankenPHP, LiteSpeed). CI and dev declarations keep their bucket but say so.
+export function contextNote(d: Declaration): string {
+  if (d.context === "ci") return d.kind === "setup-php" ? "CI-only CLI, lower exposure than a web-serving runtime; still update" : "CI-only, lower exposure than a web-serving runtime; still update";
+  if (d.context === "dev") return "dev-only, lower exposure than a web-serving runtime; still update";
+  return "";
+}
+
 function f(d: Declaration, bucket: Bucket, reason: Reason, branch: string | null, message: string): Finding {
-  return { ...d, bucket, reason, branch, message };
+  const note = bucket === "fixed" ? "" : contextNote(d);
+  return { ...d, bucket, reason, branch, message: note ? `${message} (${note})` : message };
 }
 
 // Official image tags with no version ("fpm", "cli", "latest") follow the newest PHP release.

@@ -168,3 +168,17 @@ test("EOL message: no official release; backport branch named only for 7.4, 8.0 
   for (const b of ["7.3", "5.6"]) assert.doesNotMatch(eolMessage(b), /backport branch/);
   assert.equal(classify(decl("official-image", "5"), hypo).message, "no official php.net release for 5.x; upgrade, use your vendor's backport");
 });
+
+test("CI and dev findings say they're lower exposure but keep their bucket; prod and DECLARED ≥ FIXED don't", () => {
+  const ci = classify(decl("setup-php", "8.3", { context: "ci" }), hypo);
+  assert.equal(`${ci.bucket}/${ci.reason}`, "manual/floating-rebuild");
+  assert.match(ci.message, /\(CI-only CLI, lower exposure than a web-serving runtime; still update\)$/);
+  const ciImage = classify(decl("official-image", "8.3.30", { context: "ci" }), hypo);
+  assert.equal(`${ciImage.bucket}/${ciImage.reason}`, "action/vulnerable");
+  assert.match(ciImage.message, /\(CI-only, lower exposure/);
+  const dev = classify(decl("tool-versions", "8.1.31", { context: "dev" }), hypo);
+  assert.equal(`${dev.bucket}/${dev.reason}`, "action/eol");
+  assert.match(dev.message, /\(dev-only, lower exposure than a web-serving runtime; still update\)$/);
+  assert.doesNotMatch(classify(decl("official-image", "8.3.30"), hypo).message, /lower exposure/);
+  assert.doesNotMatch(classify(decl("tool-versions", "8.3.99", { context: "dev" }), hypo).message, /lower exposure/);
+});
