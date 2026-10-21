@@ -4,7 +4,8 @@ import type { Bucket, Declaration, Finding, FixTable, Reason } from "./types.js"
 import { branchOf, compareExact, isEol, parseVersion, type PhpVersion } from "./version.js";
 import { OLD_BASE_OS } from "./images.js";
 
-const ONE_LINER = "docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'";
+export const RUNTIME_CHECK = "docker run --rm --entrypoint php <image> -r 'echo PHP_VERSION;'";
+const CHECK = "the docker run check";
 
 function f(d: Declaration, bucket: Bucket, reason: Reason, branch: string | null, message: string): Finding {
   return { ...d, bucket, reason, branch, message };
@@ -23,7 +24,7 @@ function floatingMessage(d: Declaration, branch: string | null): string {
     case "tool-versions":
       return `minor-only version resolves to whatever${b} patch is installed`;
     default: {
-      let m = "fixed only after pull, rebuild and redeploy after the release, then confirm with: " + ONE_LINER;
+      let m = "fixed only after the release: rebuild with --pull, redeploy, then confirm with " + CHECK;
       if (d.note && OLD_BASE_OS.test(d.note)) m += `; tags on an old base OS (${d.note}) may no longer be rebuilt`;
       return m;
     }
@@ -47,9 +48,9 @@ export function classify(d: Declaration, table: FixTable): Finding {
         "vendors backport fixes without changing the version; check your vendor's security tracker" + eolNote(v, table.eol));
     case "third-party-image":
       return f(d, "manual", "third-party-image", branch,
-        (branch ? `bundles PHP ${branch}${eolNote(v, table.eol)}; ` : "bundles PHP; ") + "check the image maintainer's release, then confirm with: " + ONE_LINER);
+        (branch ? `bundles PHP ${branch}${eolNote(v, table.eol)}; ` : "bundles PHP; ") + "check the image maintainer's release, then confirm with " + CHECK);
     case "digest":
-      return f(d, "manual", "digest", branch, "pinned by digest; check the image with: " + ONE_LINER);
+      return f(d, "manual", "digest", branch, "pinned by digest; check the image with " + CHECK);
     case "unresolved":
       return f(d, "manual", "unresolved", null, "version comes from a variable or matrix this tool can't resolve");
     case "build-arg":
