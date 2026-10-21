@@ -60,16 +60,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Fails the build if a forbidden word appears in tracked files.
-      # Set FORBIDDEN in the repo's Actions variables (Settings > Variables),
-      # e.g. "companyname|productname|targeting" — it stays out of the code.
+      # FORBIDDEN is a repo secret (Settings > Secrets), e.g. "word1|word2", so GitHub masks it in logs.
+      # Only file names and match counts are printed, never the matched text or the pattern.
       - name: Check for forbidden words
         env:
-          FORBIDDEN: ${{ vars.FORBIDDEN }}
+          FORBIDDEN: ${{ secrets.FORBIDDEN }}
         run: |
           if [ -z "$FORBIDDEN" ]; then echo "FORBIDDEN not set, skipping"; exit 0; fi
-          if git grep -inE "$FORBIDDEN" -- . ':!.github'; then
-            echo "Forbidden word found"; exit 1
+          if git grep -qiE -e "$FORBIDDEN" -- . ':!.github'; then
+            echo "Forbidden word found in these files (match counts):"
+            git grep -ciE -e "$FORBIDDEN" -- . ':!.github'
+            exit 1
           fi
+          echo "No forbidden words in tracked files"
 
   authorship:
     runs-on: ubuntu-24.04
