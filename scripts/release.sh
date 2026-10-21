@@ -21,7 +21,7 @@ npm ci --silent
 npm test --silent >/dev/null
 
 echo "== check the fix table against php.net"
-node scripts/check-fixes.mjs fixes/fixes.json "${lag[@]}"
+node scripts/check-fixes.mjs fixes/fixes.json ${lag[@]+"${lag[@]}"}
 
 echo "== measure on the real table"
 [ -d .corpus ] || ./scripts/fetch-corpus.sh

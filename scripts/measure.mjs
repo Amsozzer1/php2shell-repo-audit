@@ -143,7 +143,7 @@ const recall = {
 const verdicts = {
   measuredWith: recall.measuredWith,
   definition:
-    "Unverifiable firm verdicts: among tool findings that match a label, are version-dependent, are not on an EOL branch, and come from a source that can't prove the runtime (M), the number where a check commits to vulnerable or fixed (N). Branches whose fixed version is null are left out.",
+    "Unverifiable firm verdicts: among tool findings that match a label, are version-dependent, are not on an EOL branch, and come from a source that can't prove the runtime (M), the number where a check commits to vulnerable or fixed (N). Findings on branches with no fixed version in the table (null, or not in the table) are left out.",
   unverifiableFirmVerdicts: { M: firm.M, tool: firm.toolN, naive: firm.naiveN, leftOutNullBranch: firm.skippedNullBranch },
   eolFindings: eol,
   cantProveRuntime: { unprovable: tot.unprovableLabeled, labeled: tot.labeled },
@@ -157,5 +157,5 @@ for (const o of outside) console.log(`  outside labeling grep: ${o}`);
 for (const [t, v] of Object.entries(byType)) console.log(`  ${t.padEnd(20)} labeled ${v.labeled}  tool ${v.tool}  grep ${v.grep}`);
 for (const r of perRepo) console.log(`  ${r.set.padEnd(8)} ${r.repo.padEnd(26)} labeled ${r.labeled}  tool ${r.toolFound} (+${r.toolFP})  grep ${r.grepFound} (+${r.grepFP})`);
 console.log(`can't prove runtime: ${tot.unprovableLabeled}/${tot.labeled} labeled declarations`);
-console.log(`unverifiable firm verdicts (of ${firm.M}): tool ${firm.toolN}  naive ${firm.naiveN}  (left out, null branch: ${firm.skippedNullBranch})`);
+console.log(`unverifiable firm verdicts (of ${firm.M}): tool ${firm.toolN}  naive ${firm.naiveN}  (left out, branch has no fixed version in the table: ${firm.skippedNullBranch})`);
 console.log(`EOL findings: ${eol.findings} (tool ACTION REQUIRED ${eol.toolActionRequired}, naive firm ${eol.naiveFirm})`);
