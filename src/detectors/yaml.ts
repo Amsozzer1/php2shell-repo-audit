@@ -11,7 +11,8 @@ export function yamlContext(rel: string): Context {
   const r = rel.toLowerCase();
   const name = r.split("/").pop() ?? r;
   if (
-    r.startsWith(".github/workflows/") || r.startsWith(".github/actions/") || r.includes(".circleci/") ||
+    r.startsWith(".github/workflows/") || r.startsWith(".github/actions/") || r.startsWith(".forgejo/workflows/") ||
+    r.startsWith(".gitea/workflows/") || r.includes(".circleci/") ||
     name === ".gitlab-ci.yml" || r.startsWith(".gitlab/ci/") || name === "bitbucket-pipelines.yml" ||
     name === ".drone.yml" || name === "azure-pipelines.yml" || name === ".travis.yml" || r.startsWith(".buildkite/")
   )
@@ -75,7 +76,7 @@ function matrixValues(lines: string[], key: string): Array<{ value: string; line
 function setupPhp(file: string, lines: string[]): Declaration[] {
   const out: Declaration[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (!/^\s*(?:-\s*)?uses:\s*["']?shivammathur\/setup-php@/.test(lines[i]!)) continue;
+    if (!/^\s*(?:-\s*)?uses:\s*["']?(?:https?:\/\/github\.com\/)?shivammathur\/setup-php@/.test(lines[i]!)) continue;
     // Step bounds: from the line that starts the step ("- ") to the next line at or above its indent.
     let start = i;
     while (start > 0 && !/^\s*-\s/.test(lines[start]!)) start--;

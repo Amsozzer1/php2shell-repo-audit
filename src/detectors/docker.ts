@@ -47,8 +47,10 @@ function parseArgs(rest: string, into: Record<string, string | undefined>) {
   }
 }
 
-const INSTALL = /\b(?:apt-get|apt|aptitude)\s+(?:\S+\s+)*?install\b|\bapk\s+(?:\S+\s+)*?add\b|\b(?:dnf|yum|microdnf)\s+(?:\S+\s+)*?install\b/;
-const PHP_PKG = /^php(?:(\d)\.?(\d{1,2}))?(?:$|[-=])/i;
+const INSTALL =
+  /\b(?:apt-get|apt|aptitude)\s+(?:\S+\s+)*?install\b|\bapk\s+(?:\S+\s+)*?add\b|\b(?:dnf|yum|microdnf|zypper)\s+(?:\S+\s+)*?(?:install|in)\b|\bpacman\s+(?:\S+\s+)*?-S\w*\b/;
+// php, php8.3-fpm, php83, php-cli, and Debian's Apache module package libapache2-mod-php[8.3].
+const PHP_PKG = /^(?:libapache2-mod-)?php(?:(\d)\.?(\d{1,2}))?(?:$|[-=])/i;
 
 // Splits a shell command on && || ; | but not inside $( ), so a package list built by a
 // subshell (for ext in ...; do echo "php8.3-$ext"; done) stays with its install command.

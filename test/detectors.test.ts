@@ -161,3 +161,13 @@ test("PHP version inputs passed to a reusable workflow", () => {
   );
   assert.deepEqual(brief(ds), [[5, "setup-php", "8.3"], [5, "setup-php", "8.4"], [7, "setup-php", "8.3"]]);
 });
+
+test("held-out gaps: setup-php by URL, libapache2-mod-php, pacman, Forgejo workflows", () => {
+  const url = detectYaml(".forgejo/workflows/lint.yml", "    steps:\n    - uses: https://github.com/shivammathur/setup-php@v2\n      with:\n        php-version: 8.4\n");
+  assert.deepEqual(brief(url), [[4, "setup-php", "8.4"]]);
+  assert.equal(url[0]!.context, "ci");
+  const mod = detectDockerfile("Dockerfile", "FROM debian:trixie\nRUN apt-get install -y \\\n  apache2 libapache2-mod-php \\\n  php-curl\n");
+  assert.deepEqual(brief(mod), [[3, "distro", null]]);
+  const arch = detectDockerfile("Dockerfile", "FROM archlinux\nRUN pacman -Syu --noconfirm && pacman -S --noconfirm \\\n  apache php-apache\n");
+  assert.deepEqual(brief(arch), [[3, "distro", null]]);
+});
