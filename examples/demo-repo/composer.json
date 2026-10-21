@@ -1,0 +1,8 @@
+{
+    "name": "example/demo-repo",
+    "description": "Synthetic demo project",
+    "type": "project",
+    "require": {
+        "php": "^8.2"
+    }
+}
