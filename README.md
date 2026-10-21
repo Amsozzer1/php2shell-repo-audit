@@ -2,6 +2,8 @@
 
 By [Ahmed Sozzer](https://amsozzer.com) · [github.com/Amsozzer1](https://github.com/Amsozzer1)
 
+[![npm version](https://img.shields.io/npm/v/php2shell-repo-audit)](https://www.npmjs.com/package/php2shell-repo-audit) [![CI](https://github.com/Amsozzer1/php2shell-repo-audit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Amsozzer1/php2shell-repo-audit/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/LICENSE)
+
 php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
 
 <!-- intro:start -->
