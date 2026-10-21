@@ -1,10 +1,11 @@
 {
-  "note": "Hand labels of PHP version declarations in the corpus repos, made by reading candidate lines before the tool was run on the corpus. No versions and no verdicts.",
+  "note": "Hand labels of PHP version declarations, made by reading candidate lines before the tool was run on that repo. No versions and no verdicts. The tuning set was labeled first; the held-out set was labeled after the detector fixes and measured once.",
   "labeledOn": "2026-10-21",
   "candidates": "git grep -niE 'php|sail/runtimes' -- '*Dockerfile*' '*Containerfile*' '*.yml' '*.yaml' '*.php-version' '*.tool-versions' '*composer.json' ':!vendor' ':!node_modules'",
   "rules": [
     "A declaration is a line that states which PHP a project runs, builds or tests with: a container image that is or bundles PHP, a package install of PHP, a setup-php version input (including env values and reusable-workflow inputs that feed it), .php-version / .tool-versions, or composer require.php / config.platform.php.",
     "Matrix values are labeled on the line where the value is written; lines that only reference ${{ matrix.x }} are not labeled; matrix exclude entries are not declarations.",
+    "Block-list matrix values (a line like - \"8.2\" under a php: key) are labeled on their own lines even though they don't contain 'php'. Added before the held-out set was measured; no tuning-set repo uses a block-list matrix.",
     "Package installs are labeled once per RUN instruction and PHP branch, on the line of the first PHP package.",
     "Make variables, .env values and comments are not labeled. Lines outside the candidate grep (for example an image name with no 'php' in it) are not labeled, so recall is measured over these file types and this grep only."
   ],
@@ -38,7 +39,8 @@
       ".tool-versions:1:version-file:exact",
       "composer.json:13:composer",
       "scripts/docker/Dockerfile:21:php-image:floating",
-      "scripts/docker/Dockerfile-fpm:21:php-image:floating"
+      "scripts/docker/Dockerfile-fpm:21:php-image:floating",
+      "docker-compose.yml:4:sail"
     ],
     "docker-library/wordpress": [
       "Dockerfile.template:5:php-image:arg",
@@ -104,6 +106,63 @@
       "compose.yml:61:third-party-image",
       "tests/10/compose.yml:11:third-party-image",
       "tests/11/compose.yml:11:third-party-image"
+    ],
+    "nextcloud/docker": [
+      "32/apache/Dockerfile:2:php-image:floating",
+      "32/fpm-alpine/Dockerfile:2:php-image:floating",
+      "32/fpm/Dockerfile:2:php-image:floating",
+      "33/apache/Dockerfile:2:php-image:floating",
+      "33/fpm-alpine/Dockerfile:2:php-image:floating",
+      "33/fpm/Dockerfile:2:php-image:floating",
+      "34/apache/Dockerfile:2:php-image:floating",
+      "34/fpm-alpine/Dockerfile:2:php-image:floating",
+      "34/fpm/Dockerfile:2:php-image:floating",
+      "35/apache/Dockerfile:2:php-image:floating",
+      "35/fpm-alpine/Dockerfile:2:php-image:floating",
+      "35/fpm/Dockerfile:2:php-image:floating",
+      "Dockerfile-alpine.template:1:php-image:arg",
+      "Dockerfile-debian.template:1:php-image:arg"
+    ],
+    "FreshRSS/FreshRSS": [
+      ".devcontainer/Dockerfile:8:distro",
+      "Docker/Dockerfile:10:distro",
+      "Docker/Dockerfile-Alpine:8:distro",
+      "Docker/Dockerfile-Arch:10:distro",
+      "Docker/Dockerfile-Newest:9:distro",
+      "Docker/Dockerfile-Oldest:9:distro",
+      "composer.json:20:composer",
+      "composer.json:52:composer",
+      "lib/marienfressinaud/lib_opml/composer.json:12:composer",
+      "lib/marienfressinaud/lib_opml/composer.json:17:composer"
+    ],
+    "BookStackApp/BookStack": [
+      ".forgejo/workflows/analyse-php.yml:24:setup-php",
+      ".forgejo/workflows/lint-php.yml:24:setup-php",
+      ".forgejo/workflows/test-migrations.yml:22:setup-php",
+      ".forgejo/workflows/test-php.yml:22:setup-php",
+      "composer.json:11:composer",
+      "composer.json:110:composer",
+      "dev/docker/Dockerfile:1:php-image:floating",
+      "dev/docker/db-testing/Containerfile:10:distro"
+    ],
+    "wallabag/wallabag": [
+      ".github/workflows/coding-standards.yml:28:setup-php",
+      ".github/workflows/continuous-integration.yml:44:setup-php",
+      ".github/workflows/continuous-integration.yml:45:setup-php",
+      ".github/workflows/continuous-integration.yml:46:setup-php",
+      ".github/workflows/continuous-integration.yml:270:setup-php",
+      ".github/workflows/continuous-integration.yml:484:setup-php",
+      ".github/workflows/translations.yml:21:setup-php",
+      ".github/workflows/upload-release-package.yml:19:setup-php",
+      "composer.json:47:composer",
+      "docker/php/Dockerfile:10:php-image:floating"
     ]
-  }
+  },
+  "corrections": [
+    {
+      "label": "monicahq/monica docker-compose.yml:4:sail",
+      "when": "after the first measurement run",
+      "why": "Labeling pass listed this repo's candidates with the 'php' grep before 'sail/runtimes' was added to it, so the Sail build line was never shown to the labeler. A re-check of all repos with 'sail/runtimes' found only this line and the already-labeled pestphp line."
+    }
+  ]
 }
