@@ -28,6 +28,10 @@ echo "== measure on the real table"
 ./scripts/fetch-corpus.sh >/dev/null
 node scripts/measure.mjs --fixes fixes/fixes.json --out results
 
+echo "== drop the pre-release line from the README"
+node -e 'const fs=require("fs");const s=fs.readFileSync("README.md","utf8");fs.writeFileSync("README.md",s.replace("0.1.0 is published after php.net'"'"'s advisory at 14:00 UTC.\n\n",""))'
+if grep -q "is published after php.net's advisory" README.md; then echo "FAIL: pre-release line still in README" >&2; exit 1; fi
+
 echo "== regenerate README blocks"
 node scripts/render-readme.mjs --fixes fixes/fixes.json --with-verdicts
 
