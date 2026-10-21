@@ -5,7 +5,7 @@ import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadFixes } from "./fixes.js";
 import { scan } from "./scan.js";
-import { buildReport, renderJson, renderSummary, renderText } from "./report.js";
+import { buildReport, renderJson, renderSummary, renderText, renderTextCompact } from "./report.js";
 import { GitHub, resolveToken } from "./github.js";
 import { scanOrg } from "./org.js";
 import { buildOrgReport, renderOrgJson, renderOrgMarkdown, renderOrgText } from "./org-report.js";
@@ -73,6 +73,9 @@ async function main(argv: string[]): Promise<number> {
   }
   const fixes = await loadFixes({ offline, fixesPath });
   const color = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR;
+  // Terminals narrower than the column layout get the compact layout.
+  const cols = process.stdout.isTTY ? process.stdout.columns : 0;
+  const narrow = cols && cols < 100 ? cols : 0;
 
   if (org) {
     const token = resolveToken();
@@ -90,6 +93,7 @@ async function main(argv: string[]): Promise<number> {
   const report = buildReport(pkg.version, scan(root), fixes);
   if (format === "json") process.stdout.write(renderJson(report));
   else if (format === "summary") process.stdout.write(renderSummary(report));
+  else if (narrow) process.stdout.write(renderTextCompact(report, color, narrow));
   else process.stdout.write(renderText(report, color));
   return report.exit.code;
 }

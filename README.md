@@ -138,7 +138,7 @@ Full numbers and how each was produced: [`results/numbers.md`](results/numbers.m
 | 4 | No PHP declarations found: the tool couldn't see your runtime |
 | 2 | Error |
 
-A composer constraint alone doesn't keep the check at 3 when the repo also declares a production runtime. With `--org`, repos that declare no PHP are listed and don't change the exit code; 4 means no repo declares PHP. The Action fails on 1, 3 and 4 by default; `fail-on: action` turns 3 into a pass, and 4 always fails. Flags: `--json`, `--summary` (Markdown), `--offline`, `--fixes <file>`. Set `NO_COLOR` to turn colour off.
+A composer constraint alone doesn't keep the check at 3 when the repo also declares a production runtime. With `--org`, repos that declare no PHP are listed and don't change the exit code; 4 means no repo declares PHP. The Action fails on 1, 3 and 4 by default; `fail-on: action` turns 3 into a pass, and 4 always fails. Flags: `--json`, `--markdown` (also `--summary`), `--offline`, `--fixes <file>`. Set `NO_COLOR` to turn colour off. In a terminal narrower than 100 columns the text output switches to a compact layout (declared line, then file, line and reason); `--json` has the full messages.
 
 ## Build and test from a clean clone
 

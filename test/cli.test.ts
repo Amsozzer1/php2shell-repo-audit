@@ -105,3 +105,17 @@ test('the word "safe" never appears in text, JSON or summary output', () => {
   }
   assert.doesNotMatch(run(["--help"]).out, /\bsafe\b/i);
 });
+
+test("compact layout for narrow terminals fits the width and keeps every finding", async () => {
+  const { buildReport, renderTextCompact } = await import("../src/report.js");
+  const { scan } = await import("../src/scan.js");
+  const { loadFixes } = await import("../src/fixes.js");
+  const fixes = await loadFixes({ fixesPath: `${FIXTURES}fixes.hypothetical.json` });
+  const out = renderTextCompact(buildReport("0.1.0", scan(demo), fixes), false, 54);
+  for (const line of out.split("\n")) assert.ok(line.length <= 54, `too wide: ${line}`);
+  for (const t of ["FROM php:8.1-fpm", "FROM php:8.3.30-fpm", "apt-get install php8.2-cli", "setup-php 8.3", "php 8.4.20", '"php": "^8.2"']) {
+    assert.ok(out.includes(t), t);
+  }
+  assert.match(out, /ACTION REQUIRED \(3\)[\s\S]*CHECK MANUALLY \(4\)[\s\S]*DECLARED ≥ FIXED \(0\)/);
+  assert.doesNotMatch(out, /\bsafe\b/i);
+});

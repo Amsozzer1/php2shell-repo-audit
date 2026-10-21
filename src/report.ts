@@ -94,6 +94,55 @@ export function renderText(r: Report, color: boolean): string {
   return out.join("\n") + "\n";
 }
 
+// Wraps on spaces; continuation lines keep the line's indent plus two spaces.
+function wrap(line: string, width: number): string[] {
+  const indent = /^ */.exec(line)![0];
+  const out: string[] = [];
+  let cur = "";
+  for (const word of line.trimStart().split(" ")) {
+    const lead = cur ? cur + " " : out.length ? indent + "  " : indent;
+    if (cur && lead.length + word.length > width) {
+      out.push(cur);
+      cur = indent + "  " + word;
+    } else cur = lead + word;
+  }
+  out.push(cur);
+  return out;
+}
+
+// For terminals narrower than the column layout: each finding is the declared line, then where and why.
+// Full messages are in --json or a wider terminal.
+export function renderTextCompact(r: Report, color: boolean, width: number): string {
+  const c = paint(color);
+  const out: string[] = [];
+  const add = (line: string) => out.push(...wrap(line, width));
+  const t = r.fixTable;
+  add(`${r.tool} ${r.version}`);
+  add(`fix table rev ${t.revision}: ${t.status === "pending" ? "pending" : `published${t.publishedAt ? " " + t.publishedAt : ""}`} (${t.origin})`);
+  add("Reads repo files. Doesn't check servers.");
+  for (const w of r.warnings) add(`warning: ${w}`);
+  if (r.findings.length === 0) {
+    out.push("");
+    add(r.exit.why + ".");
+    return out.join("\n") + "\n";
+  }
+  for (const [b, title] of BUCKETS) {
+    const fs = r.findings.filter((f) => f.bucket === b);
+    out.push("", c(BUCKET_COLOR[b], `${title} (${fs.length})`));
+    for (const f of fs) {
+      add(`  ${f.text}`);
+      add(`    ${f.file}:${f.line} · ${f.reason}`);
+    }
+  }
+  if (r.skipped.length) {
+    out.push("");
+    add(`skipped or unparsed: ${r.skipped.length} file(s)`);
+  }
+  out.push("");
+  add(`exit ${r.exit.code}: ${r.exit.why} · --json for details`);
+  return out.join("\n") + "\n";
+}
+
 export function renderJson(r: Report): string {
   return JSON.stringify(
     {
