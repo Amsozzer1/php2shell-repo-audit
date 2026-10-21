@@ -1,5 +1,5 @@
-name: php2shell-repo-audit
-description: Lists the PHP versions this repo declares and sorts them by what needs the php2shell fix (CVE-2026-109618, CVE-2026-109619).
+name: php2shell Repo Audit
+description: Lists PHP versions found in this repo and sorts them by what needs the php2shell fix (CVE-2026-109618, CVE-2026-109619).
 author: Ahmed M. Sozzer
 branding:
   icon: list

@@ -1,7 +1,7 @@
 {
   "name": "php2shell-repo-audit",
   "version": "0.1.0",
-  "description": "Lists the PHP versions your repos declare and sorts them by what needs the php2shell fix (CVE-2026-109618, CVE-2026-109619). CLI and GitHub Action.",
+  "description": "php2shell (CVE-2026-109618, CVE-2026-109619) CLI and GitHub Action: sorts the PHP versions it finds in Dockerfiles, CI and composer.json by what needs the fix.",
   "type": "module",
   "bin": {
     "php2shell-repo-audit": "dist/src/cli.js"
@@ -23,14 +23,25 @@
   },
   "keywords": [
     "php2shell",
+    "cve-2026-109618",
+    "cve-2026-109619",
     "CVE-2026-109618",
     "CVE-2026-109619",
     "php",
-    "docker",
-    "github-action",
-    "inventory",
     "php-fpm",
-    "setup-php"
+    "docker",
+    "dockerfile",
+    "kubernetes",
+    "composer",
+    "setup-php",
+    "github-action",
+    "github-actions",
+    "ci",
+    "inventory",
+    "security-audit",
+    "laravel",
+    "wordpress",
+    "drupal"
   ],
   "repository": {
     "type": "git",

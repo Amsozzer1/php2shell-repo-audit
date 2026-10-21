@@ -1,10 +1,10 @@
-# php2shell-repo-audit: which PHP versions do your repos declare, and which need the php2shell fix (CVE-2026-109618, CVE-2026-109619)?
+# php2shell-repo-audit: which PHP versions do your Dockerfiles, CI and composer.json declare, and which need the php2shell fix (CVE-2026-109618, CVE-2026-109619)?
 
 By [Ahmed Sozzer](https://amsozzer.com) · [github.com/Amsozzer1](https://github.com/Amsozzer1)
 
-A CLI and GitHub Action that lists the PHP versions your repos declare and sorts them by what needs the php2shell fix.
+php2shell-repo-audit is a CLI and GitHub Action that lists the PHP versions it finds declared in your repos (Dockerfiles, compose, Kubernetes, CI, composer.json) and sorts them by what needs the php2shell fix for CVE-2026-109618 and CVE-2026-109619.
 
-PHP publishes the fix for two critical core bugs nicknamed php2shell on 21 Oct 2026 at 14:00 UTC. If you keep your setup in git, the first question is which repos and images run a PHP that needs it. `grep "FROM php:"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files and gives you a sorted to-do list. It does not check running servers.
+php2shell is two critical bugs in PHP itself; php.net publishes the fixed versions at 14:00 UTC on 21 Oct 2026. The first question is which of your repos and images run a PHP that needs the fix. `grep "FROM php:"` finds some Dockerfile lines. It misses CI versions, distro packages, version files and images that bundle PHP, and it doesn't tell you which lines matter: a floating tag like `php:8.3-fpm` is only fixed after you rebuild, a Debian package can be patched without its version changing, and a composer constraint isn't a runtime at all. This tool reads those files in one repo or a GitHub org. It does not check running servers.
 
 ## Check in 60 seconds, without this tool
 
@@ -23,7 +23,9 @@ docker build --pull .
 
 Compare what you see with the fixed versions in [php.net's advisory](https://www.php.net/archive/2026.php).
 
-## Run it on a repo
+## Run it on a repo or a GitHub org
+
+0.1.0 is published after php.net's advisory at 14:00 UTC.
 
 ```sh
 npx php2shell-repo-audit@0.1.0 path/to/repo
@@ -31,14 +33,14 @@ npx php2shell-repo-audit@0.1.0 path/to/repo
 
 Node 20 or newer. No runtime dependencies. On a local repo the only network call fetches the fix table from this repo (`fixes/fixes.json` on `main`, 3 second timeout); `--offline` uses the copy bundled in the package.
 
-To inventory every repo in a GitHub organization or user account, read-only:
+To inventory the repos in a GitHub organization or user account, read-only:
 
 ```sh
 npx php2shell-repo-audit@0.1.0 --org your-org                         # buckets grouped by repo
 npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md   # short summary to paste into an incident channel
 ```
 
-- The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough.
+- The token comes from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`. It only makes GET requests. For private repos, a fine-grained token with read access to Contents and Metadata is enough. It only sees repos the token can read, so check the repo count it prints against what you expect.
 - It reads each repo's default branch: one git trees call per repo, then one call per file the detectors read. Nothing else is downloaded.
 - Archived repos and forks are skipped (`--include-forks` includes forks).
 - It reads the rate-limit headers, waits for the reset when few requests are left or a limit is hit, and prints progress to stderr. For GitHub Enterprise, set `GITHUB_API_URL`.
@@ -53,11 +55,11 @@ As a GitHub Action:
     fail-on: manual   # or "action" to fail only on ACTION REQUIRED
 ```
 
-It writes the findings to the job summary.
+It writes the findings to the job summary. You can also pin to the full commit SHA of the v0.1.0 tag instead of the tag name.
 
-![Terminal: grep finds 3 lines in the demo repo, then php2shell-repo-audit finds all 7 declarations and sorts them](docs/demo.gif)
+![Terminal: grep finds 3 lines in the demo repo, then php2shell-repo-audit finds the 7 declarations in the demo repo and sorts them](https://raw.githubusercontent.com/Amsozzer1/php2shell-repo-audit/main/docs/demo.gif)
 
-*The demo repo is synthetic (`examples/demo-repo/`). First `grep -rnE "FROM +php:"`, the usual "inventory your Dockerfiles" step, finds 3 lines. Then the tool finds all 7 declarations: three Dockerfiles, a Debian package install, a setup-php version in CI, `.tool-versions` and composer. It sorts them into ACTION REQUIRED, CHECK MANUALLY and DECLARED ≥ FIXED, with a reason for each. The last scene runs `--org --markdown` on a made-up org (`example-org`), served from recorded API fixtures by `scripts/mock-github.mjs`.*
+*The demo repo is synthetic (`examples/demo-repo/`). First `grep -rnE "FROM +php:"`, the usual "inventory your Dockerfiles" step, finds 3 lines. Then the tool finds the 7 declarations in the demo repo: three Dockerfiles, a Debian package install, a setup-php version in CI, `.tool-versions` and composer. It sorts them into ACTION REQUIRED, CHECK MANUALLY and DECLARED ≥ FIXED, with a reason for each. The last scene runs `--org --markdown` on a made-up org (`example-org`), served from recorded API fixtures by `scripts/mock-github.mjs`.*
 
 Output on the demo repo:
 
@@ -96,14 +98,14 @@ Measured on 10 public PHP repos pinned to commit SHAs on 21 Oct 2026 (`results/c
 | Tuning (6 repos, 70 labels), first run | **This tool** | 58 / 69 (84%) | 3 |
 | | Baseline: `grep -rnE "FROM +php:"` | 31 / 69 (45%) | 0 |
 
-The first run on the tuning repos found real gaps (Dockerfile names like `Dockerfile-fpm`, setup-php versions set through `env:` or passed to reusable workflows, `matrix.exclude` entries read as versions). I fixed them and the tuning set went to 70/70, but that number was tuned on the same repos, so it isn't in the table. The held-out repos were labeled after those fixes and measured once. Their 6 misses (setup-php referenced by full URL, Debian's `libapache2-mod-php`, an Arch `pacman` install) are fixed in this release too, which makes the held-out number a measurement of the code before those fixes. Every run is in [`results/runs/`](results/runs/README.md).
+The first run on the tuning repos found real gaps (Dockerfile names like `Dockerfile-fpm`, setup-php versions set through `env:` or passed to reusable workflows, `matrix.exclude` entries read as versions). I fixed them and the tuning set went to 70/70, but that number was tuned on the same repos, so it isn't in the table. The held-out repos were labeled after those fixes and measured once. Their 6 misses (setup-php referenced by full URL, Debian's `libapache2-mod-php`, an Arch `pacman` install) are fixed in this release too, which makes the held-out number a measurement of the code before those fixes. Every run is in [`results/runs/`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/runs/README.md).
 
 **111 of the 112 labeled declarations can't prove which PHP build runs.** They are floating image tags, setup-php versions, distro packages, Sail runtimes, images that bundle PHP, templated tags and composer constraints. Only one is an exact pin (`.tool-versions` with a patch version). That is why most findings land in CHECK MANUALLY.
 
 <!-- verdicts:start -->
 <!-- verdicts:end -->
 
-Full numbers and how each was produced: [`results/numbers.md`](results/numbers.md).
+Full numbers and how each was produced: [`results/numbers.md`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/numbers.md).
 
 ## How it works
 
@@ -127,6 +129,52 @@ Full numbers and how each was produced: [`results/numbers.md`](results/numbers.m
 - Helm and Kustomize templates, compose `extends:`, GitLab `include:`, and versions set in `.env` files.
 - Anything built outside the repo, and the image that is actually deployed. For that, use the `docker run` line above.
 - Images it doesn't recognize as bundling PHP. It recognizes `wordpress`, `drupal`, `joomla`, `nextcloud`, `matomo`, `phpmyadmin`, `composer`, `dunglas/frankenphp`, `laravelsail/*`, `bitnami/php-fpm`, `bitnami/wordpress`, `bitnami/laravel`, `serversideup/php`, `webdevops/php*`, `thecodingmachine/php`, `shinsenter/*`, `chialab/php`, and any image whose last name part contains `php`.
+
+## php2shell questions
+
+### How do I check if my repos are affected by php2shell (CVE-2026-109618, CVE-2026-109619)?
+
+php2shell-repo-audit can't tell whether a running server is affected; it lists the PHP versions your repos declare and sorts them by what needs the fix. Run `npx php2shell-repo-audit@0.1.0 path/to/repo` for one repo, or `npx php2shell-repo-audit@0.1.0 --org your-org` for a GitHub organization. It lists the PHP versions it finds declared in git (Dockerfiles, compose, Kubernetes manifests, CI, version files, composer.json) and puts each one in ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED against php.net's fix table, with a reason code and a context (prod, ci, dev). Setups it does not read are listed under "What this does not catch".
+
+### Does it check my servers or running containers?
+
+No. php2shell-repo-audit reads files in git, and with `--org` it only makes read-only GET requests to the GitHub REST API. On a local repo the only network call fetches the fix table (`fixes/fixes.json` on `main`); `--offline` uses the bundled copy. To see the PHP build that actually runs, use the `php -r`, `dpkg -l`/`apk info` and `docker run` commands in "Check in 60 seconds". For distro builds, the package version checked against your vendor's security tracker is what counts, not `PHP_VERSION`.
+
+### Does it test for the php2shell bug itself?
+
+No. It compares the PHP versions a repo declares with the fixed versions php.net publishes, and it never says a repo is fine. DECLARED ≥ FIXED always means "runtime not verified".
+
+### Which PHP versions fix CVE-2026-109618 and CVE-2026-109619?
+
+php.net publishes the fixed version for each branch in its advisory at 14:00 UTC on 21 Oct 2026. This tool reads them from [`fixes/fixes.json`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/fixes/fixes.json), which is filled by hand from that advisory; until it is, every branch in the table is `pending` and nothing can be marked fixed. 5.x, 7.x, 8.0 and 8.1 are past end of life in php.net's support policy, so the tool marks them ACTION REQUIRED. Distro packages, Sail runtimes and ARG defaults on those branches stay in CHECK MANUALLY, because a vendor or the build may change them.
+
+### Is `php:8.3-fpm` fixed?
+
+Not by itself. A floating tag says nothing about the build you run: you get the fix only after the official image is rebuilt on the fixed release and you rebuild with `docker build --pull` and redeploy. Push the rebuilt image under a new tag or digest, or make sure the deploy pulls it; restarting the same container, or reusing the tag with `imagePullPolicy: IfNotPresent`, keeps the old build. Then confirm with the `docker run` check. The tool reports these lines as CHECK MANUALLY with the reason `floating-rebuild`.
+
+### Does updating Laravel, WordPress, Symfony or Drupal fix php2shell?
+
+Updating the framework's code does not. php2shell is in the PHP runtime, so the fix is a new PHP build: a rebuilt image, a new setup-php run or a distro package update. Pulling a rebuilt official `wordpress` or `drupal` image can, because those images bundle PHP; confirm with the `docker run` check. Changing `require.php` in `composer.json` does not change the runtime either; the tool reports composer constraints as `constraint-only`.
+
+### Does a Debian or Ubuntu package version show the fix?
+
+Not reliably. Distro vendors backport fixes without changing the upstream version, so apt, apk, dnf, yum, pacman, ondrej PPA and remi installs always go to CHECK MANUALLY (`distro-vendor`). Check your vendor's security tracker.
+
+### How do I run it across a GitHub org?
+
+Run `npx php2shell-repo-audit@0.1.0 --org your-org --markdown > php2shell.md` for a short summary to paste into an incident channel. It reads each repo's default branch with a token from `GH_TOKEN`, `GITHUB_TOKEN` or `gh auth token`, skips forks unless you pass `--include-forks`, and waits out GitHub's rate limits. It only sees repos the token can read. Private repos outside the token's access are not listed, so check the repo count it prints against what you expect. It does not read archived repos, other branches or deployed tags. A service built from any of those is not in the summary, so treat the list as a starting point, not the whole estate.
+
+### How do I run a php2shell check in GitHub Actions?
+
+php2shell-repo-audit ships a GitHub Action: add `uses: Amsozzer1/php2shell-repo-audit@v0.1.0` after `actions/checkout`, or pin to the full commit SHA of the v0.1.0 tag. The Action writes the findings to the job summary and fails on exit code 1 (ACTION REQUIRED), 3 (a manual check is needed, a file was skipped, or no production runtime is declared) and 4 (no PHP found), and on 2 if the tool itself errors (see Exit codes). A passing job means only that nothing this repo declares needs action or a manual check. It says nothing about the images or servers you actually run. With `fail-on: action`, exit code 3 passes too. That covers manual checks, skipped files and a repo with no production runtime declared, so the job can be green while no runtime has been verified at all.
+
+### How is this different from grep or host-side php2shell checkers?
+
+Host-side checkers inspect servers, SSH hosts and pulled images; php2shell-repo-audit reads the repo before deploy and needs no server access. On 4 held-out public repos with 42 declarations I labeled by hand, the tool found 36 and `grep -rnE "FROM +php:"` found 16. That is a small set, labeled by one person, and recall only covers the file types the labels covered; the 6 misses were fixed after that single run. The tool also sorts what it finds: 111 of the 112 declarations labeled across all 10 corpus repos can't prove which PHP build runs, so most land in CHECK MANUALLY with a reason. Method and runs: [`results/numbers.md`](https://github.com/Amsozzer1/php2shell-repo-audit/blob/main/results/numbers.md).
+
+### What output formats does it support?
+
+php2shell-repo-audit prints plain text, JSON (`--json`) and Markdown (`--markdown`, also `--summary`). With `--org`, `--markdown` prints a short summary for an incident channel. The GitHub Action adds the Markdown summary to the job summary.
 
 ## Exit codes
 
