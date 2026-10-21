@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Declaration } from "./types.js";
-import { walk } from "./walk.js";
+import { SKIP_DIRS, walk } from "./walk.js";
 import { detectDockerfile, isDockerfile } from "./detectors/docker.js";
 import { detectYaml, isYaml } from "./detectors/yaml.js";
 import { detectComposer, detectVersionFile, isComposer, isVersionFile } from "./detectors/files.js";
@@ -13,7 +13,22 @@ export interface ScanResult {
   skipped: string[]; // candidate files that were too big or unreadable
 }
 
-const isCandidate = (rel: string) => isDockerfile(rel) || isYaml(rel) || isVersionFile(rel) || isComposer(rel);
+export const isCandidate = (rel: string) => isDockerfile(rel) || isYaml(rel) || isVersionFile(rel) || isComposer(rel);
+
+// True for paths inside folders the walk skips (node_modules, vendor, .git, ...).
+export const inSkippedDir = (rel: string) => rel.split("/").slice(0, -1).some((p) => SKIP_DIRS.has(p));
+
+export function detectFile(rel: string, content: string): Declaration[] {
+  if (isDockerfile(rel)) return detectDockerfile(rel, content);
+  if (isYaml(rel)) return detectYaml(rel, content);
+  if (isVersionFile(rel)) return detectVersionFile(rel, content);
+  if (isComposer(rel)) return detectComposer(rel, content);
+  return [];
+}
+
+export function sortDeclarations(ds: Declaration[]): Declaration[] {
+  return ds.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
+}
 
 export function scan(root: string): ScanResult {
   const { files, oversized } = walk(root, isCandidate);
@@ -27,11 +42,7 @@ export function scan(root: string): ScanResult {
       skipped.push(rel);
       continue;
     }
-    if (isDockerfile(rel)) declarations.push(...detectDockerfile(rel, content));
-    else if (isYaml(rel)) declarations.push(...detectYaml(rel, content));
-    else if (isVersionFile(rel)) declarations.push(...detectVersionFile(rel, content));
-    else if (isComposer(rel)) declarations.push(...detectComposer(rel, content));
+    declarations.push(...detectFile(rel, content));
   }
-  declarations.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.line - b.line));
-  return { declarations, filesRead: files.length, skipped };
+  return { declarations: sortDeclarations(declarations), filesRead: files.length, skipped };
 }

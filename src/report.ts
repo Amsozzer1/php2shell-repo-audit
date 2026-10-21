@@ -41,13 +41,13 @@ export function buildReport(version: string, s: ScanResult, fx: LoadedFixes): Re
   };
 }
 
-const BUCKETS: Array<[Bucket, string]> = [
+export const BUCKETS: Array<[Bucket, string]> = [
   ["action", "ACTION REQUIRED"],
   ["manual", "CHECK MANUALLY"],
   ["fixed", "DECLARED ≥ FIXED"],
 ];
 
-export function tableLine(r: Report): string {
+export function tableLine(r: Pick<Report, "fixTable">): string {
   const t = r.fixTable;
   const state =
     t.status === "pending"
@@ -56,9 +56,29 @@ export function tableLine(r: Report): string {
   return `fix table rev ${t.revision}: ${state} (${t.origin})`;
 }
 
+export const paint = (color: boolean) => (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
+const BUCKET_COLOR: Record<Bucket, string> = { action: "1;31", manual: "1;33", fixed: "1;36" };
+
+// The three buckets with aligned columns. `indent` lets the org view nest them under a repo.
+export function renderBuckets(findings: Finding[], color: boolean, indent = ""): string[] {
+  const c = paint(color);
+  const out: string[] = [];
+  const loc = (f: Finding) => `${f.file}:${f.line}`;
+  const locW = Math.max(...findings.map((f) => loc(f).length));
+  const textW = Math.min(28, Math.max(...findings.map((f) => f.text.length)));
+  for (const [b, title] of BUCKETS) {
+    const fs = findings.filter((f) => f.bucket === b);
+    out.push("", indent + c(BUCKET_COLOR[b], `${title} (${fs.length})`));
+    for (const f of fs) {
+      const text = f.text.length > textW ? f.text.slice(0, textW - 1) + "…" : f.text;
+      out.push(`${indent}  ${loc(f).padEnd(locW)}  ${f.context.padEnd(4)}  ${text.padEnd(textW)}  ${f.reason}: ${f.message}`);
+    }
+  }
+  return out;
+}
+
 export function renderText(r: Report, color: boolean): string {
-  const c = (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
-  const bucketColor: Record<Bucket, string> = { action: "1;31", manual: "1;33", fixed: "1;36" };
+  const c = paint(color);
   const out: string[] = [];
   out.push(`${r.tool} ${r.version}  ·  ${tableLine(r)}`);
   out.push("Reads PHP versions declared in this repo. It does not check running servers.");
@@ -67,17 +87,7 @@ export function renderText(r: Report, color: boolean): string {
     out.push("", r.exit.why + ".");
     return out.join("\n") + "\n";
   }
-  const loc = (f: Finding) => `${f.file}:${f.line}`;
-  const locW = Math.max(...r.findings.map((f) => loc(f).length));
-  const textW = Math.min(28, Math.max(...r.findings.map((f) => f.text.length)));
-  for (const [b, title] of BUCKETS) {
-    const fs = r.findings.filter((f) => f.bucket === b);
-    out.push("", c(bucketColor[b], `${title} (${fs.length})`));
-    for (const f of fs) {
-      const text = f.text.length > textW ? f.text.slice(0, textW - 1) + "…" : f.text;
-      out.push(`  ${loc(f).padEnd(locW)}  ${f.context.padEnd(4)}  ${text.padEnd(textW)}  ${f.reason}: ${f.message}`);
-    }
-  }
+  out.push(...renderBuckets(r.findings, color));
   if (r.skipped.length) out.push("", c("33", `skipped or unparsed: ${r.skipped.length} file(s): ${r.skipped.join(", ")}`));
   out.push("", `The docker run check: ${r.runtimeCheck}`);
   out.push(`exit ${r.exit.code}: ${r.exit.why}`);
@@ -97,22 +107,26 @@ export function renderJson(r: Report): string {
       filesRead: r.filesRead,
       skipped: r.skipped,
       runtimeCheck: r.runtimeCheck,
-      findings: r.findings.map((f) => ({
-        bucket: f.bucket,
-        reason: f.reason,
-        file: f.file,
-        line: f.line,
-        context: f.context,
-        kind: f.kind,
-        declared: f.text,
-        version: f.version,
-        branch: f.branch,
-        message: f.message,
-      })),
+      findings: r.findings.map(findingJson),
     },
     null,
     2,
   ) + "\n";
+}
+
+export function findingJson(f: Finding) {
+  return {
+    bucket: f.bucket,
+    reason: f.reason,
+    file: f.file,
+    line: f.line,
+    context: f.context,
+    kind: f.kind,
+    declared: f.text,
+    version: f.version,
+    branch: f.branch,
+    message: f.message,
+  };
 }
 
 const md = (s: string) => s.replace(/\|/g, "\\|").replace(/`/g, "'");
