@@ -10,7 +10,7 @@ On fix day, teams that keep their setup in git need to know which repos and imag
 
 ## Goals
 
-- Find the PHP version declarations in a repo or a whole GitHub org.
+- Find the PHP version declarations in a repo, a GitHub repo or a whole GitHub org.
 - Sort each one into ACTION REQUIRED, CHECK MANUALLY or DECLARED ≥ FIXED, with a reason code and a step to take.
 - Never say a repo is fine. A version in git is not the runtime in production.
 - Work as `npx` with no runtime dependencies, as a GitHub Action, and as JSON for scripts.
@@ -39,6 +39,7 @@ Checking running servers, testing for the bug, detecting distro backports, chang
 | CHECK MANUALLY | Everything that can't prove the runtime: floating tags, setup-php, `.php-version`, distro packages, Sail, third-party images, ARG defaults, digests, composer constraints, unresolved variables, unknown branches, branches with no fixed version yet |
 
 - EOL findings name php.net's source backport branch where one exists (7.4, 8.0, 8.1).
+- CI and dev findings say they are lower exposure than a web-serving runtime. The bucket doesn't change.
 - Every finding carries a `fix` string: the step to take for its reason code.
 
 ## Exit codes
@@ -51,7 +52,8 @@ Checking running servers, testing for the bug, detecting distro backports, chang
 
 ## Interface
 
-- `npx php2shell-repo-audit [path]`, plus `--org name` through the GitHub API (read-only, rate-limit aware).
+- `npx php2shell-repo-audit [path]`, plus `--repo owner/name` and `--org name` through the GitHub API (read-only, rate-limit aware). A token is optional for public repos.
+- `--check-upstream`: asks Docker Hub whether a floating official tag has been rebuilt with the fix. The finding stays in CHECK MANUALLY.
 - `--json` (schemaVersion 1), `--markdown` (job summary, or an incident-channel summary with `--org`), `--offline`, `--fixes <file>`.
 - Composite GitHub Action with `fail-on: manual | action` and a job summary.
 
@@ -70,14 +72,6 @@ Checking running servers, testing for the bug, detecting distro backports, chang
 ## Release
 
 `scripts/release.sh <version>`: tests, the php.net cross-check, version bump, re-measurement, regenerated README blocks and `llms.txt` (the release fails if any pre-release wording is left), commit, tag, push and a GitHub Release. The tag push publishes to npm through trusted publishing with provenance.
-
-## Next release (0.1.1)
-
-Merged, not yet on npm:
-
-- `--repo owner/name`: scans one GitHub repo through the API without cloning. A token is optional for public repos.
-- `--check-upstream`: asks Docker Hub whether a floating official tag has been rebuilt with the fix. The finding stays in CHECK MANUALLY.
-- CI and dev findings say they are lower exposure than a web-serving runtime. The bucket doesn't change.
 
 ## Later
 
